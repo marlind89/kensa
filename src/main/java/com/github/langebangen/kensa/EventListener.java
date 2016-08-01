@@ -119,6 +119,25 @@ public class EventListener
 							.appendContent(player.getCurrentTrack().toString(), MessageBuilder.Styles.BOLD);
 					sendMessage(messageBuilder);
 					break;
+				case LOOP:
+					switch(command.getArgument().toLowerCase())
+					{
+						case "on":
+							player.setLoop(true);
+							sendMessage(messageBuilder, "Looping enabled.");
+							break;
+						case "off":
+							player.setLoop(false);
+							sendMessage(messageBuilder, "Looping disabled.");
+							break;
+						default:
+							sendMessage(messageBuilder, "Invalid loop command. Specify on or off, e.g. \"!loop on\"");
+					}
+					break;
+				case SHUFFLE:
+					player.shuffle();
+					sendMessage(messageBuilder, "Playlist shuffled!");
+					break;
 				case PLAYLIST:
 					List<AudioPlayer.Track> playlist = player.getPlaylist();
 					if(playlist.isEmpty())

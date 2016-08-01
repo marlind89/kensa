@@ -13,6 +13,8 @@ public enum Action
 	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports youtube links and urls that ends with .mp3, .ogg, .flac, or .wav."),
 	SKIP     ("skip", "Skips the current song and additional future songs if a number is provided."),
 	SONG     ("song", "Shows the current track."),
+	LOOP     ("loop", "Enables/disables looping of the playlist. Specifiy 'on' to enable looping and 'off' to disable it. Disabled by default."),
+	SHUFFLE  ("shuffle", "Shuffles the playlist."),
 	PLAYLIST ("playlist", "Shows the playlist."),
 	CLEAR    ("clear", "Clears the playlist.");
 
