@@ -18,6 +18,8 @@ import sx.blah.discord.util.audio.AudioPlayer;
 import java.util.List;
 
 /**
+ * EventListener which listens on events from discord.
+ *
  * @author langen
  */
 public class EventListener
@@ -26,17 +28,36 @@ public class EventListener
 
 	private final IDiscordClient client;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param client
+	 *      the {@link IDiscordClient}
+	 */
 	public EventListener(IDiscordClient client)
 	{
 		this.client = client;
 	}
 
+	/**
+	 * Event received when the bot has succesfully logged in and ready.
+	 *
+	 * @param event
+	 *      the {@link ReadyEvent}
+	 */
 	@EventSubscriber
 	public void onReady(ReadyEvent event)
 	{
 		logger.info("Logged in successfully.!");
 	}
 
+	/**
+	 * Event which is received when a message is sent in a guild
+	 * this bot is connected to.
+	 *
+	 * @param event
+	 *      the {@link MessageReceivedEvent
+	 */
 	@EventSubscriber
 	public void onMessageReceivedEvent(MessageReceivedEvent event)
 	{
@@ -122,6 +143,12 @@ public class EventListener
 		}
 	}
 
+	/**
+	 * Sends the help message.
+	 *
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 */
 	private void sendHelpMessage(MessageBuilder messageBuilder)
 	{
 		for(Action action : Action.values())
@@ -132,12 +159,27 @@ public class EventListener
 		sendMessage(messageBuilder);
 	}
 
+	/**
+	 * Sends the specified message.
+	 *
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 * @param message
+	 *      the message
+	 */
 	private void sendMessage(MessageBuilder messageBuilder, String message)
 	{
 		messageBuilder.withContent(message);
 		sendMessage(messageBuilder);
 	}
 
+	/**
+	 * Sends the message which has been created in the
+	 * specified {@link MessageBuilder}
+	 *
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 */
 	private void sendMessage(MessageBuilder messageBuilder)
 	{
 		try

@@ -1,6 +1,8 @@
 package com.github.langebangen.kensa;
 
 /**
+ * Class describing the actions Kensa supports.
+ *
  * @author langen
  */
 public enum Action
@@ -15,36 +17,57 @@ public enum Action
 	CLEAR    ("clear", "Clears the playlist.");
 
 	private final String action;
-	private final int argsAmount;
 	private final String description;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param command
+	 *      the command
+	 * @param description
+	 *      the description
+	 */
 	Action(String command, String description)
 	{
-		this(command, 0, description);
-	}
-
-	Action(String command, int argsAmount, String description)
-	{
 		this.action = "!" + command;
-		this.argsAmount = argsAmount;
 		this.description = description;
 	}
 
+	/**
+	 * Gets the action
+	 *
+	 * @return action
+	 */
 	public String getAction()
 	{
 		return action;
 	}
 
+	/**
+	 * Gets the description
+	 *
+	 * @return description
+	 */
 	public String getDescription()
 	{
 		return description;
 	}
 
-	public static Action getAction(String commandValue)
+	/**
+	 * Gets the action for the specified action string
+	 *
+	 * @param actionValue
+	 *      the action value string
+	 *
+	 * @return action
+	 *      the action that matched the action value,
+	 *      or null if there was no match.
+	 */
+	public static Action getAction(String actionValue)
 	{
 		for(Action command : values())
 		{
-			if(command.action.equalsIgnoreCase(commandValue))
+			if(command.action.equalsIgnoreCase(actionValue))
 			{
 				return command;
 			}

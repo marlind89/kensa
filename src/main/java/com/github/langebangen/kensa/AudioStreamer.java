@@ -24,12 +24,25 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Static utility class for streaming content from a specified url to the {@link AudioPlayer}
+ *
  * @author langen
  */
 public class AudioStreamer
 {
 	private static final Logger logger = LoggerFactory.getLogger(AudioStreamer.class);
 
+	/**
+	 * Streams the content located on the specified URL to the specified player.
+	 * Will send a message that the content has been added to the playlist queue.
+	 *
+	 * @param urlString
+	 *      the url string
+	 * @param player
+	 *      the {@link AudioPlayer}
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 */
 	public static void stream(String urlString, AudioPlayer player, MessageBuilder messageBuilder)
 	{
 		if(urlString.contains("youtube.com") || urlString.contains("youtu.be"))
@@ -38,7 +51,8 @@ public class AudioStreamer
 			{
 				streamYoutube(urlString, player, messageBuilder);
 			}
-			catch(UnsupportedAudioFileException | DiscordException | IOException | RateLimitException | MissingPermissionsException e)
+			catch(UnsupportedAudioFileException | DiscordException | IOException
+					| RateLimitException | MissingPermissionsException e)
 			{
 				logger.error("Error when streaming content from youtube.", e);
 			}
@@ -60,12 +74,31 @@ public class AudioStreamer
 		}
 	}
 
+	/**
+	 * Streams the content from an youtube url link.
+	 *
+	 * @param url
+	 *      the url
+	 * @param player
+	 *      the {@link AudioPlayer}
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 *
+	 * @throws MissingPermissionsException
+	 * @throws IOException
+	 * @throws RateLimitException
+	 * @throws DiscordException
+	 * @throws UnsupportedAudioFileException
+	 */
 	private static void streamYoutube(String url, AudioPlayer player, MessageBuilder messageBuilder)
-			throws MissingPermissionsException, IOException, RateLimitException, DiscordException, UnsupportedAudioFileException
+			throws MissingPermissionsException, IOException, RateLimitException, DiscordException,
+			UnsupportedAudioFileException
 	{
+		//Credits to pangeacake: https://gist.github.com/pangeacake/1fbad48728d56f563cbbdba23243423b
 		File resourceFolder = new File("src/main/resources").getAbsoluteFile();
 		String youtubeDlPath = new File(resourceFolder, "youtube-dl.exe").getPath();
 		String ffmpegPath = new File(resourceFolder, "ffmpeg.exe").getPath();
+
 		final String[] title = new String[1];
 		final String[] readableDuration = new String[1];
 		new Thread(() ->
@@ -103,7 +136,7 @@ public class AudioStreamer
 
 			title[0] = json.has("title")
 					? json.get("title").getAsString() : (json.has("fulltitle")
-						? json.get("fulltitle").getAsString() : null);
+					? json.get("fulltitle").getAsString() : null);
 
 			int durationInSeconds = json.has("duration") ? json.get("duration").getAsInt() : -1;
 
@@ -215,6 +248,14 @@ public class AudioStreamer
 		sendPlayMessage(track, messageBuilder);
 	}
 
+	/**
+	 * Sends a play message with the specified message builder.
+	 *
+	 * @param track
+	 *      the {@link AudioPlayer.Track} that was queued
+	 * @param messageBuilder
+	 *      the {@link MessageBuilder}
+	 */
 	private static void sendPlayMessage(AudioPlayer.Track track, MessageBuilder messageBuilder)
 	{
 		try
@@ -224,7 +265,7 @@ public class AudioStreamer
 					.appendContent(track.toString(), MessageBuilder.Styles.BOLD)
 					.build();
 		}
-		catch(DiscordException |RateLimitException | MissingPermissionsException e)
+		catch(DiscordException | RateLimitException | MissingPermissionsException e)
 		{
 			e.printStackTrace();
 		}
