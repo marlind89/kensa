@@ -1,10 +1,11 @@
-package com.github.langebangen.kensa;
+package com.github.langebangen.kensa.audio;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.MissingPermissionsException;
@@ -37,18 +38,18 @@ public class AudioStreamer
 	 *
 	 * @param urlString
 	 *      the url string
-	 * @param player
-	 *      the {@link AudioPlayer}
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
+	 * @param channel
+	 *      the {@link IChannel}
 	 */
-	public static void stream(String urlString, AudioPlayer player, MessageBuilder messageBuilder)
+	public static void stream(String urlString, IChannel channel)
 	{
+		AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(channel.getGuild());
+
 		if(urlString.contains("youtube.com") || urlString.contains("youtu.be"))
 		{
 			try
 			{
-				streamYoutube(urlString, player, messageBuilder);
+				streamYoutube(urlString, player, channel);
 			}
 			catch(UnsupportedAudioFileException | DiscordException | IOException
 					| RateLimitException | MissingPermissionsException e)
@@ -64,7 +65,7 @@ public class AudioStreamer
 				ExtendedTrack track = new ExtendedTrack(new URLProvider(url),
 						TrackSource.URL, url.toString(), null, null);
 				player.queue(track);
-				sendPlayMessage(track, messageBuilder);
+				sendPlayMessage(track, channel);
 			}
 			catch(UnsupportedAudioFileException | IOException e)
 			{
@@ -80,8 +81,8 @@ public class AudioStreamer
 	 *      the url
 	 * @param player
 	 *      the {@link AudioPlayer}
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
+	 * @param channel
+	 *      the {@link IChannel}
 	 *
 	 * @throws MissingPermissionsException
 	 * @throws IOException
@@ -89,7 +90,7 @@ public class AudioStreamer
 	 * @throws DiscordException
 	 * @throws UnsupportedAudioFileException
 	 */
-	private static void streamYoutube(String url, AudioPlayer player, MessageBuilder messageBuilder)
+	private static void streamYoutube(String url, AudioPlayer player, IChannel channel)
 			throws MissingPermissionsException, IOException, RateLimitException, DiscordException,
 			UnsupportedAudioFileException
 	{
@@ -240,7 +241,7 @@ public class AudioStreamer
 
 		player.queue(track);
 
-		sendPlayMessage(track, messageBuilder);
+		sendPlayMessage(track, channel);
 	}
 
 	/**
@@ -248,14 +249,15 @@ public class AudioStreamer
 	 *
 	 * @param track
 	 *      the {@link AudioPlayer.Track} that was queued
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
+	 * @param channel
+	 *      the {@link IChannel}
 	 */
-	private static void sendPlayMessage(AudioPlayer.Track track, MessageBuilder messageBuilder)
+	private static void sendPlayMessage(AudioPlayer.Track track, IChannel channel)
 	{
 		try
 		{
-			messageBuilder
+			new MessageBuilder(channel.getClient())
+					.withChannel(channel)
 					.appendContent("Queued ")
 					.appendContent(track.toString(), MessageBuilder.Styles.BOLD)
 					.build();

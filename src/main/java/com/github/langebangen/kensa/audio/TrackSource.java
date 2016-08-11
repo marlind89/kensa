@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa;
+package com.github.langebangen.kensa.audio;
 
 /**
  * Enum containing the different sources a track can originate from.

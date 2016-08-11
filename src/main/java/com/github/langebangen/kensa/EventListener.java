@@ -1,21 +1,22 @@
 package com.github.langebangen.kensa;
 
+import com.github.langebangen.kensa.command.Action;
+import com.github.langebangen.kensa.command.Command;
+import com.github.langebangen.kensa.listener.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.MissingPermissionsException;
 import sx.blah.discord.util.RateLimitException;
 import sx.blah.discord.util.audio.AudioPlayer;
-
-import java.util.List;
 
 /**
  * EventListener which listens on events from discord.
@@ -67,96 +68,46 @@ public class EventListener
 		Command command = Command.parseCommand(content);
 		if(command != null)
 		{
-			IGuild guild = message.getGuild();
-			MessageBuilder messageBuilder = new MessageBuilder(client).withChannel(message.getChannel());
-			AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(guild);
+			String argument = command.getArgument();
+			IChannel textChannel = message.getChannel();
+			AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(message.getGuild());
+			EventDispatcher dispatcher = client.getDispatcher();
 			switch(command.getAction())
 			{
 				case HELP:
-					sendHelpMessage(messageBuilder);
+					sendHelpMessage(new MessageBuilder(client)
+							.withChannel(message.getChannel()));
 					break;
+
+				/* Voice channel commands */
 				case JOIN:
-					String channel = command.getArgument();
-					List<IVoiceChannel> voiceChannels = guild.getVoiceChannelsByName(channel);
-					if(voiceChannels.isEmpty())
-					{
-						sendMessage(messageBuilder, "No channel with name " + channel + " exists!");
-					}
-					else
-					{
-						try
-						{
-							voiceChannels.get(0).join();
-						}
-						catch(MissingPermissionsException e)
-						{
-							sendMessage(messageBuilder, "I have no permission to join this channel :frowning2:");
-						}
-					}
+					dispatcher.dispatch(new JoinVoiceChannelEvent(textChannel, argument));
 					break;
 				case LEAVE:
-					client.getConnectedVoiceChannels().forEach(IVoiceChannel::leave);
+					dispatcher.dispatch(new LeaveVoiceChannelEvent(textChannel));
 					break;
+
+				/* Radio commands */
 				case PLAY:
-					String url = command.getArgument();
-					AudioStreamer.stream(url, AudioPlayer.getAudioPlayerForGuild(guild), messageBuilder);
+					dispatcher.dispatch(new PlayAudioEvent(textChannel, player, argument));
 					break;
 				case SKIP:
-					String indexString = command.getArgument();
-					if(indexString == null)
-					{
-						//Skip current song
-						player.skip();
-					}
-					else
-					{
-						int index = Integer.parseInt(indexString);
-						player.skipTo(index);
-					}
+					dispatcher.dispatch(new SkipTrackEvent(textChannel, player, argument));
 					break;
 				case SONG:
-					messageBuilder.appendContent("Current song: ")
-							.appendContent(player.getCurrentTrack().toString(), MessageBuilder.Styles.BOLD);
-					sendMessage(messageBuilder);
+					dispatcher.dispatch(new CurrentTrackRequestEvent(textChannel, player));
 					break;
 				case LOOP:
-					switch(command.getArgument().toLowerCase())
-					{
-						case "on":
-							player.setLoop(true);
-							sendMessage(messageBuilder, "Looping enabled.");
-							break;
-						case "off":
-							player.setLoop(false);
-							sendMessage(messageBuilder, "Looping disabled.");
-							break;
-						default:
-							sendMessage(messageBuilder, "Invalid loop command. Specify on or off, e.g. \"!loop on\"");
-					}
+					dispatcher.dispatch(new LoopPlaylistEvent(textChannel, player, argument));
 					break;
 				case SHUFFLE:
-					player.shuffle();
-					sendMessage(messageBuilder, "Playlist shuffled!");
+					dispatcher.dispatch(new ShufflePlaylistEvent(textChannel, player));
 					break;
 				case PLAYLIST:
-					List<AudioPlayer.Track> playlist = player.getPlaylist();
-					if(playlist.isEmpty())
-					{
-						sendMessage(messageBuilder, "No songs added to the playlist.");
-					}
-					else
-					{
-						int i = 1;
-						for(AudioPlayer.Track track : playlist)
-						{
-							messageBuilder.appendContent(String.format("\n %d . %s", i++, track));
-						}
-						sendMessage(messageBuilder);
-					}
+					dispatcher.dispatch(new ShowPlaylistEvent(textChannel, player));
 					break;
 				case CLEAR:
-					player.clear();
-					sendMessage(messageBuilder, "Playlist cleared.");
+					dispatcher.dispatch(new ClearPlaylistEvent(textChannel, player));
 					break;
 			}
 		}

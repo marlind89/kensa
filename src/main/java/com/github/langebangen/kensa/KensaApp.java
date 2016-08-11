@@ -1,5 +1,7 @@
 package com.github.langebangen.kensa;
 
+import com.github.langebangen.kensa.listener.ChannelListener;
+import com.github.langebangen.kensa.listener.RadioListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
@@ -38,6 +40,9 @@ public class KensaApp
 				.build();
 
 		dcClient.getDispatcher().registerListener(new EventListener(dcClient));
+		dcClient.getDispatcher().registerListener(new RadioListener(dcClient));
+		dcClient.getDispatcher().registerListener(new ChannelListener(dcClient));
+
 		dcClient.login();
 
 		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());

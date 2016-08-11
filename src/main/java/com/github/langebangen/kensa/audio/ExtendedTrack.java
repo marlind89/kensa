@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa;
+package com.github.langebangen.kensa.audio;
 
 import sx.blah.discord.handle.audio.IAudioProvider;
 import sx.blah.discord.util.audio.AudioPlayer.Track;

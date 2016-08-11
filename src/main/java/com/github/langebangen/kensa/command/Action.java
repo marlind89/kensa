@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa;
+package com.github.langebangen.kensa.command;
 
 /**
  * Class describing the actions Kensa supports.

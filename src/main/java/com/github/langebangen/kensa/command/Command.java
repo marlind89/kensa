@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa;
+package com.github.langebangen.kensa.command;
 
 /**
  * Command containing an {@link Action} with the specified argument (if any)
