@@ -14,7 +14,6 @@ import sx.blah.discord.util.audio.providers.URLProvider;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -95,16 +94,12 @@ public class AudioStreamer
 			UnsupportedAudioFileException
 	{
 		//Credits to pangeacake: https://gist.github.com/pangeacake/1fbad48728d56f563cbbdba23243423b
-		File resourceFolder = new File("src/main/resources").getAbsoluteFile();
-		String youtubeDlPath = new File(resourceFolder, "youtube-dl.exe").getPath();
-		String ffmpegPath = new File(resourceFolder, "ffmpeg.exe").getPath();
-
 		final String[] title = new String[1];
 		final String[] readableDuration = new String[1];
 		new Thread(() ->
 		{
 			ProcessBuilder info = new ProcessBuilder(
-					youtubeDlPath,
+					"youtube-dl",
 					"-q",                   //quiet. No standard out.
 					"-j",                   //Print JSON
 					"--flat-playlist",      //Get ONLY the urls of the playlist if this is a playlist.
@@ -153,7 +148,7 @@ public class AudioStreamer
 
 
 		ProcessBuilder youtube = new ProcessBuilder(
-				youtubeDlPath,
+				"youtube-dl",
 				"-q",
 				"-f", "mp3/bestaudio/best",
 				"--no-playlist",
@@ -161,7 +156,7 @@ public class AudioStreamer
 				"--", url
 		);
 		ProcessBuilder ffmpeg = new ProcessBuilder(
-				ffmpegPath,
+				"ffmpeg",
 				"-i", "-",
 				"-f", "mp3",  //Format.  mp3
 				"-movflags", "+faststart",

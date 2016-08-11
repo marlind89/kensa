@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.internal.Opus;
 import sx.blah.discord.util.DiscordException;
-import sx.blah.discord.util.RateLimitException;
 
 /**
  * Main class for Kensa.
@@ -40,16 +40,6 @@ public class KensaApp
 		dcClient.getDispatcher().registerListener(new EventListener(dcClient));
 		dcClient.login();
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() ->
-		{
-			try
-			{
-				dcClient.logout();
-			}
-			catch (DiscordException | RateLimitException e)
-			{
-				logger.error("Error logging out.", e);
-			}
-		}));
+		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());
 	}
 }
