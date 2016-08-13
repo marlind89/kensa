@@ -103,7 +103,9 @@ public class RadioListener
 		}
 		else
 		{
-			MessageBuilder messageBuilder = new MessageBuilder(client);
+			MessageBuilder messageBuilder = new MessageBuilder(client)
+					.withChannel(event.getTextChannel());
+
 			int i = 1;
 			for(AudioPlayer.Track track : playlist)
 			{
