@@ -15,6 +15,7 @@ import sx.blah.discord.util.audio.providers.URLProvider;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -147,64 +148,13 @@ public class AudioStreamer
 			}
 		}).start();
 
-
-		ProcessBuilder youtube = new ProcessBuilder(
-				"youtube-dl",
+		ProcessBuilder youtube = new ProcessBuilder("youtube-dl",
 				"-q",
-				"-f", "mp3/bestaudio/best",
-				"--no-playlist",
-				"-o", "-",
-				"--", url
-		);
-		ProcessBuilder ffmpeg = new ProcessBuilder(
-				"ffmpeg",
-				"-i", "-",
-				"-f", "mp3",  //Format.  mp3
-				"-movflags", "+faststart",
-				"-vbr", "4",
-				"-nostats",
-				"-preset", "ultrafast",
-				"-ac", "2",     //Channels. Specify 2 for stereo audio.
-				"-ar", "48000", //Rate. Opus requires an audio rate of 48000hz
-				"-map", "a",    //Makes sure to only output audio, even if the specified format supports other streams
-				"-"
-		);
+				"-f", "bestaudio",
+				"--exec", "ffmpeg -hide_banner -nostats -loglevel panic -y -i {} -vn -q:a 6 -f mp3 pipe:1",
+				"-o", "%(id)s", "--", url);
 
 		Process yProcess = youtube.start();
-		Process fProcess = ffmpeg.start();
-
-		InputStream from = yProcess.getInputStream();
-		OutputStream to = fProcess.getOutputStream();
-
-		new Thread()
-		{
-			@Override
-			public void run()
-			{
-				byte[] buffer = new byte[1024];
-				int amountRead = -1;
-				try
-				{
-					while(!isInterrupted() && ((amountRead = from.read(buffer)) > -1))
-					{
-						to.write(buffer, 0, amountRead);
-					}
-					to.flush();
-
-					from.close();
-					to.close();
-
-					yProcess.destroy();
-				}
-				catch(IOException e)
-				{
-					if(!e.getMessage().contains("The pipe has been ended"))
-					{
-						logger.error("While fetching music", e);
-					}
-				}
-			}
-		}.start();
 
 		new Thread("youtube-dl ErrorStream")
 		{
@@ -236,7 +186,7 @@ public class AudioStreamer
 		}.start();
 
 		ExtendedTrack track = new ExtendedTrack(
-				AudioSystem.getAudioInputStream(fProcess.getInputStream()),
+				AudioSystem.getAudioInputStream(yProcess.getInputStream()),
 				TrackSource.YOUTUBE, url, title[0], readableDuration[0]);
 
 		player.queue(track);
