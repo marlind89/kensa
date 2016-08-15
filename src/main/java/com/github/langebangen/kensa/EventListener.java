@@ -4,6 +4,7 @@ import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.AbstractEventListener;
 import com.github.langebangen.kensa.listener.event.*;
+import com.github.langebangen.kensa.util.KensaConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
@@ -133,6 +134,8 @@ public class EventListener
 	 */
 	private void sendHelpMessage(MessageBuilder messageBuilder)
 	{
+		messageBuilder.appendContent("Kensa v" + KensaConstants.VERSION, MessageBuilder.Styles.ITALICS);
+		messageBuilder.appendContent("\n");
 		for(Action action : Action.values())
 		{
 			messageBuilder.appendContent("\n" + action.getAction(), MessageBuilder.Styles.BOLD);
