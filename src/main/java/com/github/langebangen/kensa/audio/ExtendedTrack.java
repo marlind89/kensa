@@ -16,33 +16,22 @@ import java.io.IOException;
 public class ExtendedTrack
 		extends Track
 {
-	private final TrackSource source;
-	private final String url;
-	private final String title;
-	private final String duration;
+	private final TrackMeta trackMeta;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param provider
 	 * 		the {@link IAudioProvider}
-	 * @param source
-	 * 		the {@link TrackSource}
-	 * @param url
-	 * 		the url string
-	 * @param title
-	 * 		the title
-	 * @param duration
-	 * 		the duration
+	 * @param trackMeta
+	 *      the {@link TrackMeta}
+	 *
+	 * @throws IOException
 	 */
-	public ExtendedTrack(IAudioProvider provider, TrackSource source, String url,
-	                     String title, String duration)
+	public ExtendedTrack(IAudioProvider provider, TrackMeta trackMeta)
 	{
 		super(provider);
-		this.source = source;
-		this.url = url;
-		this.title = title;
-		this.duration = duration;
+		this.trackMeta = trackMeta;
 	}
 
 	/**
@@ -50,24 +39,16 @@ public class ExtendedTrack
 	 *
 	 * @param provider
 	 * 		the {@link AudioInputStreamProvider}
-	 * @param source
-	 * 		the {@link TrackSource}
-	 * @param url
-	 * 		the url string
-	 * @param title
-	 * 		the title
-	 * @param duration
-	 * 		the duration
+	 * @param trackMeta
+	 *      the {@link TrackMeta}
+	 *
+	 * @throws IOException
 	 */
-	public ExtendedTrack(AudioInputStreamProvider provider, TrackSource source, String url,
-	                     String title, String duration)
+	public ExtendedTrack(AudioInputStreamProvider provider, TrackMeta trackMeta)
 			throws IOException
 	{
 		super(provider);
-		this.source = source;
-		this.url = url;
-		this.title = title;
-		this.duration = duration;
+		this.trackMeta = trackMeta;
 	}
 
 	/**
@@ -75,73 +56,21 @@ public class ExtendedTrack
 	 *
 	 * @param stream
 	 * 		the {@link AudioInputStream}
-	 * @param source
-	 * 		the {@link TrackSource}
-	 * @param url
-	 * 		the url string
-	 * @param title
-	 * 		the title
-	 * @param duration
-	 * 		the duration
+	 * @param trackMeta
+	 *      the {@link TrackMeta}
+	 *
+	 * @throws IOException
 	 */
-	public ExtendedTrack(AudioInputStream stream, TrackSource source, String url,
-	                     String title, String duration)
+	public ExtendedTrack(AudioInputStream stream, TrackMeta trackMeta)
 			throws IOException
 	{
 		super(stream);
-		this.source = source;
-		this.url = url;
-		this.title = title;
-		this.duration = duration;
-	}
-
-	/**
-	 * Gets the {@link TrackSource}.
-	 *
-	 * @return trackSource
-	 *      the {@link TrackSource}
-	 */
-	public TrackSource getTrackSource()
-	{
-		return source;
-	}
-
-	/**
-	 * Gets the url string.
-	 *
-	 * @return url
-	 *      the url string
-	 */
-	public String getUrl()
-	{
-		return url;
-	}
-
-	/**
-	 * Gets the title.
-	 *
-	 * @return title
-	 *      the title
-	 */
-	public String getTitle()
-	{
-		return title;
-	}
-
-	/**
-	 * Gets the duration in a readable format string.
-	 *
-	 * @return duration
-	 *      the duration
-	 */
-	public String getDuration()
-	{
-		return duration;
+		this.trackMeta = trackMeta;
 	}
 
 	@Override
 	public String toString()
 	{
-		return String.format("%s %s", title != null ? title : url, duration != null ? duration : "");
+		return trackMeta.toString();
 	}
 }
