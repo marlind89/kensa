@@ -15,14 +15,13 @@ import sx.blah.discord.util.audio.providers.URLProvider;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Static utility class for streaming content from a specified url to the {@link AudioPlayer}
@@ -63,10 +62,10 @@ public class AudioStreamer
 			try
 			{
 				URL url = new URL(urlString);
-				ExtendedTrack track = new ExtendedTrack(new URLProvider(url),
-						TrackSource.URL, url.toString(), null, null);
+				TrackMeta trackMeta = new TrackMeta(TrackSource.URL, url.toString(), null, -1);
+				ExtendedTrack track = new ExtendedTrack(new URLProvider(url), trackMeta);
 				player.queue(track);
-				sendPlayMessage(track, channel);
+				sendPlayMessage(trackMeta, channel);
 			}
 			catch(UnsupportedAudioFileException | IOException e)
 			{
@@ -95,103 +94,121 @@ public class AudioStreamer
 			throws MissingPermissionsException, IOException, RateLimitException, DiscordException,
 			UnsupportedAudioFileException
 	{
-		//Credits to pangeacake: https://gist.github.com/pangeacake/1fbad48728d56f563cbbdba23243423b
-		final String[] title = new String[1];
-		final String[] readableDuration = new String[1];
-		new Thread(() ->
+		List<TrackMeta> trackMetas = new LinkedList<TrackMeta>();
+		ProcessBuilder info = new ProcessBuilder(
+				"youtube-dl",
+				"-q",                   //quiet. No standard out.
+				"-j",                   //Print JSON
+				"--flat-playlist",      //Get ONLY the urls of the playlist if this is a playlist.
+				"--ignore-errors",
+				"--skip-download",
+				"--", url
+		);
+
+		byte[] infoData = new byte[0];
+		try
 		{
-			ProcessBuilder info = new ProcessBuilder(
-					"youtube-dl",
-					"-q",                   //quiet. No standard out.
-					"-j",                   //Print JSON
-					"--flat-playlist",      //Get ONLY the urls of the playlist if this is a playlist.
-					"--ignore-errors",
-					"--skip-download",
-					"--", url
-			);
+			Process infoProcess = info.start();
+			infoData = IOUtils.toByteArray(infoProcess.getInputStream());
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		if(infoData == null || infoData.length == 0)
+		{
+			throw new NullPointerException("The youtube-dl info process returned no data!");
+		}
 
-			byte[] infoData = new byte[0];
-			try
-			{
-				Process infoProcess = info.start();
-				infoData = IOUtils.toByteArray(infoProcess.getInputStream());
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			if(infoData == null || infoData.length == 0)
-			{
-				throw new NullPointerException("The youtube-dl info process returned no data!");
-			}
+		String sInfo = new String(infoData);
+		Scanner scanner = new Scanner(sInfo);
 
-			String sInfo = new String(infoData);
-			Scanner scanner = new Scanner(sInfo);
+		JsonParser parser = new JsonParser();
+		if(url.contains("playlist"))
+		{
+			while(scanner.hasNextLine())
+			{
+				JsonObject json = parser.parse(scanner.nextLine()).getAsJsonObject();
 
-			JsonParser parser = new JsonParser();
+				// Duration not available when getting meta from songs in a playlist
+				trackMetas.add(new TrackMeta(TrackSource.YOUTUBE,
+						json.get("url").getAsString(),
+						json.get("title").getAsString(), -1));
+			}
+		}
+		else
+		{
 			JsonObject json = parser.parse(scanner.nextLine()).getAsJsonObject();
 
-			title[0] = json.has("title")
+			String title = json.has("title")
 					? json.get("title").getAsString() : (json.has("fulltitle")
 					? json.get("fulltitle").getAsString() : null);
 
 			int durationInSeconds = json.has("duration") ? json.get("duration").getAsInt() : -1;
 
-			readableDuration[0] = null;
-			if(durationInSeconds != -1)
-			{
-				readableDuration[0] = String.format(" [%d min, %d sec]",
-						TimeUnit.SECONDS.toMinutes(durationInSeconds),
-						TimeUnit.SECONDS.toSeconds(durationInSeconds) -
-								TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(durationInSeconds))
-				);
-			}
-		}).start();
+			trackMetas.add(new TrackMeta(TrackSource.YOUTUBE, url, title, durationInSeconds));
+		}
 
-		ProcessBuilder youtube = new ProcessBuilder("youtube-dl",
+		// Send queue message before queuing if its a playlist since
+		// it can take some time before all tracks are queued.
+		if(trackMetas.size() > 1)
+		{
+			new MessageBuilder(channel.getClient())
+					.withChannel(channel)
+					.appendContent("Queuing " + trackMetas.size() + " songs..")
+					.build();
+		}
+
+		for(TrackMeta trackMeta : trackMetas)
+		{
+			ProcessBuilder youtube = new ProcessBuilder("youtube-dl",
 				"-q",
 				"-f", "bestaudio",
 				"--exec", "ffmpeg -hide_banner -nostats -loglevel panic -y -i {} -vn -q:a 6 -f mp3 pipe:1",
-				"-o", "%(id)s", "--", url);
+				"-o", "%(id)s", "--", trackMeta.getUrl());
 
-		Process yProcess = youtube.start();
+			Process yProcess = youtube.start();
 
-		new Thread("youtube-dl ErrorStream")
-		{
-			@Override
-			public void run()
+			new Thread("youtube-dl ErrorStream")
 			{
-				try
+				@Override
+				public void run()
 				{
-					InputStream fromYTDL = null;
-
-					fromYTDL = yProcess.getErrorStream();
-					if(fromYTDL == null)
+					try
 					{
-						logger.error("youtube-dl ErrorStream is null");
+						InputStream fromYTDL = null;
+
+						fromYTDL = yProcess.getErrorStream();
+						if(fromYTDL == null)
+						{
+							logger.error("youtube-dl ErrorStream is null");
+						}
+
+						byte[] buffer = new byte[1024];
+						int amountRead = -1;
+						while(!isInterrupted() && ((amountRead = fromYTDL.read(buffer)) > -1))
+						{
+							logger.warn("youtube-dl error: " + new String(Arrays.copyOf(buffer, amountRead)));
+						}
 					}
-
-					byte[] buffer = new byte[1024];
-					int amountRead = -1;
-					while(!isInterrupted() && ((amountRead = fromYTDL.read(buffer)) > -1))
+					catch(IOException e)
 					{
-						logger.warn("youtube-dl error: " + new String(Arrays.copyOf(buffer, amountRead)));
+						logger.debug("youtube-dl", e);
 					}
 				}
-				catch(IOException e)
-				{
-					logger.debug("youtube-dl", e);
-				}
-			}
-		}.start();
+			}.start();
 
-		ExtendedTrack track = new ExtendedTrack(
-				AudioSystem.getAudioInputStream(yProcess.getInputStream()),
-				TrackSource.YOUTUBE, url, title[0], readableDuration[0]);
+			ExtendedTrack track = new ExtendedTrack(
+					AudioSystem.getAudioInputStream(yProcess.getInputStream()),
+					trackMeta);
 
-		player.queue(track);
+			player.queue(track);
+		}
 
-		sendPlayMessage(track, channel);
+		if(trackMetas.size() == 1)
+		{
+			sendPlayMessage(trackMetas.iterator().next(), channel);
+		}
 	}
 
 	/**
@@ -202,7 +219,7 @@ public class AudioStreamer
 	 * @param channel
 	 *      the {@link IChannel}
 	 */
-	private static void sendPlayMessage(AudioPlayer.Track track, IChannel channel)
+	private static void sendPlayMessage(TrackMeta track, IChannel channel)
 	{
 		try
 		{
@@ -217,4 +234,7 @@ public class AudioStreamer
 			e.printStackTrace();
 		}
 	}
+
+
+
 }
