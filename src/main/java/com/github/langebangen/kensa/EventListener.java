@@ -2,6 +2,7 @@ package com.github.langebangen.kensa;
 
 import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.command.Command;
+import com.github.langebangen.kensa.listener.AbstractEventListener;
 import com.github.langebangen.kensa.listener.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,16 +19,19 @@ import sx.blah.discord.util.MissingPermissionsException;
 import sx.blah.discord.util.RateLimitException;
 import sx.blah.discord.util.audio.AudioPlayer;
 
+import java.util.Random;
+
 /**
  * EventListener which listens on events from discord.
  *
  * @author langen
  */
 public class EventListener
+	extends AbstractEventListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
 
-	private final IDiscordClient client;
+	private final Random random;
 
 	/**
 	 * Constructor.
@@ -37,7 +41,8 @@ public class EventListener
 	 */
 	public EventListener(IDiscordClient client)
 	{
-		this.client = client;
+		super(client);
+		this.random = new Random();
 	}
 
 	/**
@@ -64,12 +69,12 @@ public class EventListener
 	{
 		IMessage message = event.getMessage();
 		String content = message.getContent();
+		IChannel textChannel = message.getChannel();
 
 		Command command = Command.parseCommand(content);
 		if(command != null)
 		{
 			String argument = command.getArgument();
-			IChannel textChannel = message.getChannel();
 			AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(message.getGuild());
 			EventDispatcher dispatcher = client.getDispatcher();
 			switch(command.getAction())
@@ -111,6 +116,13 @@ public class EventListener
 					break;
 			}
 		}
+		else
+		{
+			if((random.nextFloat() * 100) > 99)
+			{
+				sendMessage(textChannel, "YEAH, " + message.getContent().toUpperCase());
+			}
+		}
 	}
 
 	/**
@@ -127,38 +139,5 @@ public class EventListener
 			messageBuilder.appendContent(" - " + action.getDescription());
 		}
 		sendMessage(messageBuilder);
-	}
-
-	/**
-	 * Sends the specified message.
-	 *
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
-	 * @param message
-	 *      the message
-	 */
-	private void sendMessage(MessageBuilder messageBuilder, String message)
-	{
-		messageBuilder.withContent(message);
-		sendMessage(messageBuilder);
-	}
-
-	/**
-	 * Sends the message which has been created in the
-	 * specified {@link MessageBuilder}
-	 *
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
-	 */
-	private void sendMessage(MessageBuilder messageBuilder)
-	{
-		try
-		{
-			messageBuilder.send();
-		}
-		catch(DiscordException | RateLimitException | MissingPermissionsException e)
-		{
-			e.printStackTrace();
-		}
 	}
 }

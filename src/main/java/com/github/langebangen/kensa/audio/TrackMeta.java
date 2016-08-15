@@ -39,6 +39,40 @@ public class TrackMeta
 						TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(durationInSeconds)));
 	}
 
+	/**
+	 * Gets the url
+	 *
+	 * @return url
+	 *      the url string
+	 */
+	public String getUrl()
+	{
+		return url;
+	}
+
+	/**
+	 * Gets the title
+	 *
+	 * @return title
+	 *      the title
+	 */
+	public String getTitle()
+	{
+		return title;
+	}
+
+	/**
+	 * Gets the duration in seconds.
+	 *
+	 * @return durationInSeconds
+	 *      the duration in seconds
+	 *
+	 */
+	public int getDurationInSeconds()
+	{
+		return durationInSeconds;
+	}
+
 	@Override
 	public String toString()
 	{
