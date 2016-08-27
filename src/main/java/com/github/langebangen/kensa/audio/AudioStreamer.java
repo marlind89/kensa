@@ -3,6 +3,8 @@ package com.github.langebangen.kensa.audio;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.validator.Validator;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.handle.obj.IChannel;
@@ -57,7 +59,7 @@ public class AudioStreamer
 				logger.error("Error when streaming content from youtube.", e);
 			}
 		}
-		else
+		else if(UrlValidator.getInstance().isValid(urlString))
 		{
 			try
 			{
@@ -72,6 +74,63 @@ public class AudioStreamer
 				logger.error("Error when streaming content from url", e);
 			}
 		}
+		else
+		{
+			String youtubeVideoId = getFirstYoutubeMatch(urlString);
+			try
+			{
+				streamYoutube(youtubeVideoId, player, channel);
+			}
+			catch(UnsupportedAudioFileException | DiscordException | IOException
+					| RateLimitException | MissingPermissionsException e)
+			{
+				logger.error("Error when streaming content from youtube.", e);
+			}
+		}
+	}
+
+	/**
+	 * Gets the first video url match based id based on the search query
+	 * from youtube.
+	 *
+	 * @param searchQuery
+	 *      the youtube search query
+	 *
+	 * @return youtubeId
+	 *      the youtube id of the video which was the first match
+	 */
+	private static String getFirstYoutubeMatch(String searchQuery)
+	{
+		ProcessBuilder info = new ProcessBuilder(
+				"youtube-dl",
+				"ytsearch:" + searchQuery,
+				"-q",
+				"-j",
+				"--flat-playlist",
+				"--ignore-errors",
+				"--skip-download"
+		);
+
+		byte[] infoData = new byte[0];
+		try
+		{
+			Process infoProcess = info.start();
+			infoData = IOUtils.toByteArray(infoProcess.getInputStream());
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		if(infoData == null || infoData.length == 0)
+		{
+			throw new NullPointerException("The youtube-dl info process returned no data!");
+		}
+
+		String sInfo = new String(infoData);
+		Scanner scanner = new Scanner(sInfo);
+		JsonParser parser = new JsonParser();
+		JsonObject json = parser.parse(scanner.nextLine()).getAsJsonObject();
+		return json.get("id").getAsString();
 	}
 
 	/**
