@@ -121,6 +121,29 @@ public class RadioListener
 		event.getPlayer().clear();
 		sendMessage(event.getTextChannel(), "Playlist cleared.");
 	}
+
+	@EventSubscriber
+	public void handlePauseEvent(PauseEvent event)
+	{
+		AudioPlayer player = event.getPlayer();
+		IChannel channel = event.getTextChannel();
+
+		String shouldPause = event.shouldPause() == null
+				? ""
+				: event.shouldPause();
+		switch(shouldPause)
+		{
+			case "on":
+				player.setPaused(true);
+				break;
+			case "off":
+				player.setPaused(false);
+				break;
+			default:
+				sendMessage(channel, "Invalid pause command. Specify on or off, e.g. \"!pause on\"");
+		}
+	}
+	
 	private boolean isInteger(String s)
 	{
 		return isInteger(s, 10);
