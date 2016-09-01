@@ -115,6 +115,9 @@ public class EventListener
 				case PAUSE:
 					dispatcher.dispatch(new PauseEvent(textChannel, player, argument));
 					break;
+				case SEARCH:
+					dispatcher.dispatch(new SearchYoutubeEvent(textChannel, argument));
+					break;
 				case CLEAR:
 					dispatcher.dispatch(new ClearPlaylistEvent(textChannel, player));
 					break;

@@ -2,13 +2,20 @@ package com.github.langebangen.kensa.listener;
 
 import com.github.langebangen.kensa.audio.AudioStreamer;
 import com.github.langebangen.kensa.listener.event.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
 
-import java.util.List;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * @author Martin.
@@ -16,6 +23,8 @@ import java.util.List;
 public class RadioListener
 		extends AbstractEventListener
 {
+	private static final Logger logger = LoggerFactory.getLogger(RadioListener.class);
+
 	public RadioListener(IDiscordClient client)
 	{
 		super(client);
@@ -26,6 +35,71 @@ public class RadioListener
 	{
 		AudioStreamer.stream(event.getUrl(), event.getTextChannel());
 	}
+
+	@EventSubscriber
+	public void handleSearchYoutubeEvent(SearchYoutubeEvent event)
+	{
+		try
+		{
+			ProcessBuilder info = new ProcessBuilder(
+					"youtube-dl",
+					"ytsearch8:" + event.getSearchQuery(),
+					"-q",
+					"-j",
+					"--flat-playlist",
+					"--ignore-errors",
+					"--skip-download"
+			);
+
+			Process infoProcess = info.start();
+			byte[] infoData = IOUtils.toByteArray(infoProcess.getInputStream());
+
+			String sInfo = new String(infoData, Charset.forName("ISO-8859-1"));
+			Scanner scanner = new Scanner(sInfo);
+			JsonParser parser = new JsonParser();
+
+			List<String> youtubeIds = new ArrayList<>();
+			while(scanner.hasNextLine())
+			{
+				JsonObject json = parser.parse(scanner.nextLine()).getAsJsonObject();
+				youtubeIds.add(json.get("id").getAsString());
+			}
+
+			List<String> commandList = new LinkedList<>(Arrays.asList("youtube-dl",
+					"-q", "--ignore-errors",
+					"--skip-download", "-e",
+					"--get-duration",
+					"--"));
+			commandList.addAll(youtubeIds);
+			Process titleFetcher = new ProcessBuilder(commandList).start();
+
+			byte[] titlesBytes = IOUtils.toByteArray(titleFetcher.getInputStream());
+			String titles = new String(titlesBytes, Charset.forName("ISO-8859-1"));
+			scanner = new Scanner(titles);
+
+			MessageBuilder messageBuilder = new MessageBuilder(client)
+					.withChannel(event.getTextChannel())
+					.appendContent("```");
+			int i = 0;
+			while(scanner.hasNextLine())
+			{
+				String youtubeId = youtubeIds.get(i++);
+				String title = scanner.nextLine();
+				String duration = scanner.nextLine();
+
+				messageBuilder.appendContent(youtubeId);
+				messageBuilder.appendContent(" - " + title + " [" + duration + "]\n");
+			}
+			messageBuilder.appendContent("```");
+			sendMessage(messageBuilder);
+		}
+		catch(IOException e)
+		{
+			logger.error("Error when fetching information from " +
+					"youtube-dl when perform a youtube search.", e);
+		}
+	}
+
 
 	@EventSubscriber
 	public void handleSkipTrackEvent(SkipTrackEvent event)

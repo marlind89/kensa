@@ -17,6 +17,7 @@ public enum Action
 	SHUFFLE  ("shuffle", "Shuffles the playlist."),
 	PLAYLIST ("playlist", "Shows the playlist."),
 	PAUSE    ("pause", "Pauses the music player. 'on' to pause and 'off' to resume the player."),
+	SEARCH   ("search", "Search and display the eight best matches from youtube."),
 	CLEAR    ("clear", "Clears the playlist.");
 
 	private final String action;
