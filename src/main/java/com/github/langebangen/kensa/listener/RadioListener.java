@@ -178,13 +178,15 @@ public class RadioListener
 		else
 		{
 			MessageBuilder messageBuilder = new MessageBuilder(client)
-					.withChannel(event.getTextChannel());
+					.withChannel(event.getTextChannel())
+					.appendContent("```");
 
 			int i = 1;
 			for(AudioPlayer.Track track : playlist)
 			{
-				messageBuilder.appendContent(String.format("\n %d . %s", i++, track));
+				messageBuilder.appendContent(String.format("\n %d. %s", i++, track));
 			}
+			messageBuilder.appendContent("```");
 			sendMessage(messageBuilder);
 		}
 	}

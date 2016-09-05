@@ -33,7 +33,7 @@ public class TrackMeta
 		this.durationInSeconds = durationInSeconds;
 		this.readableDuration = durationInSeconds < 0
 				? null
-				: String.format(" [%d min, %d sec]",
+				: String.format("[%dm, %ds]",
 				TimeUnit.SECONDS.toMinutes(durationInSeconds),
 				TimeUnit.SECONDS.toSeconds(durationInSeconds) -
 						TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(durationInSeconds)));
