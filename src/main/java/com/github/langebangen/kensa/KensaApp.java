@@ -1,7 +1,8 @@
 package com.github.langebangen.kensa;
 
-import com.github.langebangen.kensa.listener.ChannelListener;
 import com.github.langebangen.kensa.listener.RadioListener;
+import com.github.langebangen.kensa.listener.TextChannelListener;
+import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
@@ -41,7 +42,8 @@ public class KensaApp
 
 		dcClient.getDispatcher().registerListener(new EventListener(dcClient));
 		dcClient.getDispatcher().registerListener(new RadioListener(dcClient));
-		dcClient.getDispatcher().registerListener(new ChannelListener(dcClient));
+		dcClient.getDispatcher().registerListener(new TextChannelListener(dcClient));
+		dcClient.getDispatcher().registerListener(new VoiceChannelListener(dcClient));
 
 		dcClient.login();
 

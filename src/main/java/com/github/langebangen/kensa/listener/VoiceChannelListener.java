@@ -1,5 +1,7 @@
 package com.github.langebangen.kensa.listener;
 
+import com.github.langebangen.kensa.babylon.Babylon;
+import com.github.langebangen.kensa.listener.event.BabylonEvent;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
 import sx.blah.discord.api.IDiscordClient;
@@ -14,10 +16,10 @@ import java.util.List;
 /**
  * @author Martin.
  */
-public class ChannelListener
+public class VoiceChannelListener
 	extends AbstractEventListener
 {
-	public ChannelListener(IDiscordClient client)
+	public VoiceChannelListener(IDiscordClient client)
 	{
 		super(client);
 	}

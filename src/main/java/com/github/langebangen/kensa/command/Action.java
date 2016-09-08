@@ -18,7 +18,8 @@ public enum Action
 	PLAYLIST ("playlist", "Shows the playlist."),
 	PAUSE    ("pause", "Pauses the music player. 'on' to pause and 'off' to resume the player."),
 	SEARCH   ("search", "Search and display the eight best matches from youtube."),
-	CLEAR    ("clear", "Clears the playlist.");
+	CLEAR    ("clear", "Clears the playlist."),
+	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!");
 
 	private final String action;
 	private final String description;
