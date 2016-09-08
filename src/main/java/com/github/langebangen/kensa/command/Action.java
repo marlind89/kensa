@@ -10,7 +10,9 @@ public enum Action
 	HELP     ("help", "Shows this help description."),
 	JOIN     ("join", "Joins the specified voice channel."),
 	LEAVE    ("leave", "Leaves the current channel Kensa is in."),
-	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports youtube links and urls that ends with .mp3, .ogg, .flac, or .wav."),
+	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports youtube links " +
+			          "and urls that ends with .mp3, .ogg, .flac, or .wav. If the argument is neither of this then it will search on youtube " +
+			          "and queue the song which had the best match."),
 	SKIP     ("skip", "Skips the current song and additional future songs if a number is provided."),
 	SONG     ("song", "Shows the current track."),
 	LOOP     ("loop", "Enables/disables looping of the playlist. 'on' to enable looping and 'off' to disable it. Disabled by default."),
