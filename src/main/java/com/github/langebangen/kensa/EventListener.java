@@ -14,10 +14,7 @@ import sx.blah.discord.handle.impl.events.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.MessageBuilder;
-import sx.blah.discord.util.MissingPermissionsException;
-import sx.blah.discord.util.RateLimitException;
 import sx.blah.discord.util.audio.AudioPlayer;
 
 import java.util.Random;
@@ -80,9 +77,12 @@ public class EventListener
 			EventDispatcher dispatcher = client.getDispatcher();
 			switch(command.getAction())
 			{
+				/* Text channel commands */
 				case HELP:
-					sendHelpMessage(new MessageBuilder(client)
-							.withChannel(message.getChannel()));
+					dispatcher.dispatch(new HelpEvent(textChannel));
+					break;
+				case BABYLON:
+					dispatcher.dispatch(new BabylonEvent(textChannel));
 					break;
 
 				/* Voice channel commands */
@@ -115,6 +115,9 @@ public class EventListener
 				case PAUSE:
 					dispatcher.dispatch(new PauseEvent(textChannel, player, argument));
 					break;
+				case SEARCH:
+					dispatcher.dispatch(new SearchYoutubeEvent(textChannel, argument));
+					break;
 				case CLEAR:
 					dispatcher.dispatch(new ClearPlaylistEvent(textChannel, player));
 					break;
@@ -127,23 +130,5 @@ public class EventListener
 				sendMessage(textChannel, "YEAH, " + message.getContent().toUpperCase());
 			}
 		}
-	}
-
-	/**
-	 * Sends the help message.
-	 *
-	 * @param messageBuilder
-	 *      the {@link MessageBuilder}
-	 */
-	private void sendHelpMessage(MessageBuilder messageBuilder)
-	{
-		messageBuilder.appendContent("Kensa v" + KensaConstants.VERSION, MessageBuilder.Styles.ITALICS);
-		messageBuilder.appendContent("\n");
-		for(Action action : Action.values())
-		{
-			messageBuilder.appendContent("\n" + action.getAction(), MessageBuilder.Styles.BOLD);
-			messageBuilder.appendContent(" - " + action.getDescription());
-		}
-		sendMessage(messageBuilder);
 	}
 }

@@ -1,0 +1,206 @@
+01. Margareta
+- tomat, ost
+02. Vesuvio
+- skinka
+03. Al Fungi
+- champinjoner
+04. Al Tono
+- tonfisk
+05. Bari
+- salami
+06. Bolognese
+- köttfärssås
+07. Primavera
+- lök, bacon
+08. Capricciosa
+- skinka, champinjoner
+09. Tomasso
+- skinka, räkor
+10. Vakern
+- jordnötter, kyckling
+11. Marinara
+- räkor, musslor
+12. Hawaii
+- skinka, ananas
+13. Pigalle
+- räkor, champinjoner
+14. Afrikana
+- banan, ananas, curry
+15. Amanda
+- skinka, köttfärs
+16. Opera
+- skinka, räkor, tonfisk
+17. Mesopotania
+- lök, salami, köttfärssås, hot chili
+18. Mexicana
+- jalapeño, tacosås, köttfärssås, färsk vitlök, kryddor
+19. Vegetariana
+- champinjoner, paprika, oliver, lök, kronärtskocka
+20. Amigo
+- champinjoner, paprika, lök, köttfärssås
+21. Disco
+- skinka, köttfärssås, räkor
+22. Jamaica
+- skinka, champinjoner, räkor
+23. Prinsessa
+- skinka, ananas, räkor
+24. Manotova
+- skinka, banan, ananas, curry
+25. Monte Carlo
+- kyckling, banan, jordnötter, curry
+26. Madonna
+- skinka, champinjoner, ananas
+27. Venedig
+- ananas, räkor, banan
+28. Caruso
+- skinka, bacon, salami
+29. Vego Special
+- lök, färsk tomat, paprika, oliver, fetaost
+30. Falafelpizza
+- falafel, isbergssallad, valfri sås
+31. Dobro
+- champinjoner, tonfisk, räkor
+32. El Marco
+- lök, köttfärs, jalapeño, nachos, kryddor, färsk vitlök
+33. Quattro Stagioni
+- skinka, champinjoner, räkor, musslor, kronärtskocka
+34. Azteka
+- jalapeño, tacosås, skinka, vitlökssås, kryddor
+35. Mr. Bacon
+- champinjoner, paprika, lök, salami, bacon, ägg
+36. Amor
+- skinka, champinjoner, lök, bacon, ägg, hot chili
+37. Bacon Special
+- köttfärs, bacon, lök, gorgonzola
+38. Tropical Special
+- banan, mango chutney, kräftstjärtar, curry, vitlökssås
+39. Kär & Galen
+- lök, räkor, köttfärssås, kräftstjärtar, hot chili, bearnaisesås
+40. Bombay
+- jordnötter, mango chutney, banan, kyckling, curry, (starksås)
+41. Enes
+- champinjoner, lök, paprika, fetaost, salami, soltorkade tomater
+42. Havets Special
+- musslor, tonfisk, räkor, kräftstjärtar
+43. Quattro Formaggio
+- fetaost, mozzarella, gorgonzola, pizzaost
+44. Kebabpizza
+- champinjoner, kebabkött, feferoni, valfri sås
+45. Favoriten
+- skinka, lök, kebabkött, feferoni, valfri sås
+46. Nicolina
+- bacon, ananas, kebabkött, feferoni, valfri sås
+47. Ipek Special
+- champinjoner, lök, kebabkött, sallad, feferoni, färsk tomat, valfri sås
+48. Pommespizza m. kebab
+- champinjoner, kebabkött, pommes, valfri sås
+49. Kycklingpizza
+- champinjoner, lök, kyckling, paprika, mild sås
+50. Pommespizza m. kyckling 75:-  170:-
+- kyckling, pommes, valfri sås
+51. Rimini
+- kyckling, skinka, banan, curry
+52. Titanic
+- kyckling, skinka, bacon
+53. Biblos
+- skinka, fläskfilé, bacon, räkor, bearnaisesås
+54. Helsingborg
+- skinka, champinjoner, lök, fläskfilé, bearnaisesås
+55. Andersson
+- fläskfilé, oxfilé, fetaost, champinjoner, bearnaisesås
+56. Daleman
+- kyckling, fläskfilé, banan, curry
+57. Bella Napoli
+- skinka, paprika, oxfilé, bearnaisesås
+58. Eva Lena
+- lök, räkor, oxfilé, isbergssallad, bearnaisesås
+59. Jolka Special
+- champinjoner, paprika, lök, oxfilé, vitlökssås
+60. Mamma Mia        70:-    160:-
+- champinjoner, lök, oxfilé, bearnaisesås
+61. Husets Special
+- skinka, champinjoner, lök, oxfilé, bearnaisesås
+62. Panorama
+- champinjoner, oxfilé, gorgonzola, soltorkade tomater
+63. Acapulco
+- champinjoner, lök, jalapeño, tacosås, oxfilé, kryddmix, färsk vitlök
+64. Tigris
+- oxfilé, champinjoner, ananas, lök, paprika, bearnaisesås
+65. Olympia
+- oxfilé, banan, curry, bearnaisesås
+66. Nordman
+- oxfilé, färsk tomat, bacon, bearnaisesås
+67. Fantasia
+- oxfilé, räkor, champinjoner, vitlökssås
+68. Calzone
+- skinka
+69. Calzone Special
+- champinjoner, räkor, skinka
+70. Ciao-Ciao
+- skinka, räkor, gorgonzola
+71. Cazanova
+- skinka, lök, färsk vitlök, fläskfilé
+72. Babylon
+- skinka, kebabkött, vitlökssås
+73. Kebab Special
+- champinjoner, lök, kebabkött, sallad, feferoni, valfri sås
+74. Vikingbåten
+- paprika, lök, oxfilé, färsk tomat, bearnaisesås
+75. Tefat
+- skinka, champinjoner, lök, räkor, hot chili
+76. Ufo
+- köttfärssås, lök, champinjoner, färsk vitlök
+77. Oxplanka
+- potatismos, oxfilé, champinjoner, färska tomater, lök, bearnaisesås
+78. Kebabplanka
+- potatismos, kebabkött, champinjoner, lök, feferoni, valfri sås
+79. Mexikansk planka
+- potatismos, fläskfilé, bacon, färska tomater, jalapeño, bearnaisesås
+01. Kyckling i pitabröd
+- sallad, lök, tomat, gurka, feferoni, kyckling, valfri sås
+02. Kebab i pitabröd
+- sallad, lök, tomat, gurka, feferoni, kebabkött, valfri sås
+03. Kebabrulle
+- sallad, lök, tomat, gurka, feferoni, kebabkött, valfri sås
+04. Kebabtallrik
+- sallad, lök, tomat, gurka, feferoni, kebabkött, pommes, valfri sås
+05. Kycklingtallrik
+- sallad, lök, tomat, gurka, feferoni, kyckling, pommes, valfri sås
+06. Skånsk rulle
+- sallad, lök, tomat, gurka, feferoni, ost, skinka, kebabkött, valfri sås
+07. Kycklingrulle
+- sallad, lök, tomat, gurka, kyckling, feferoni, valfri sås
+08. Vegetarisk rulle
+- sallad, lök, ost, tomat, gurka, champinjoner, oliver, valfri sås
+09. Räkrulle
+- isbergssallad, räkor, tomat, gurka, ananas, ost, valfri sås
+01. Falafel i bröd
+
+02. Falafelrulle
+
+03. Falafeltallrik m. pommes
+
+01. Amerikansk sallad
+- sallad, tomat, gurka, ost, skinka, ananas
+02. Du Chef sallad
+- sallad, ost, champinjoner, tomat, gurka, skinka, räkor
+03. Räksallad
+- sallad, champinjoner, tomat, gurka, räkor
+04. Kycklingsallad
+- sallad, ost, tomat, ananas, gurka, kyckling
+05. Tonfisksallad
+- sallad, lök, tonfisk, oliver, tomat, gurka
+06. Kebabsallad
+- sallad, lök, kebab, ost, tomat, gurka, feferoni
+07. Västkustsallad
+- sallad, tomat, gurka, räkor, musslor, kräftstjärtar, tonfisk
+08. Grekisk sallad
+- isbergssallad, fetaost, tomat, gurka, lök, paprika, oliver, feferoni
+09. Falafelsallad
+- isbergsallad, tomat, gurka, falafel, lök, feferoni
+01. Hamburgare m. bröd, 150g
+
+02. Hamburgertallrik m. pommes, 150 g
+
+03. Pommes
+- pommestallrik
