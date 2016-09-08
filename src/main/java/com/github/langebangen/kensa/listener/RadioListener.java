@@ -10,8 +10,10 @@ import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.Status;
 import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
+import sx.blah.discord.util.audio.events.TrackStartEvent;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -34,6 +36,12 @@ public class RadioListener
 	public void handlePlayAudioEvent(PlayAudioEvent event)
 	{
 		AudioStreamer.stream(event.getUrl(), event.getTextChannel());
+	}
+
+	@EventSubscriber
+	public void handleTrackStartEvent(TrackStartEvent event)
+	{
+		client.changeStatus(Status.game(event.getTrack().toString()));
 	}
 
 	@EventSubscriber
