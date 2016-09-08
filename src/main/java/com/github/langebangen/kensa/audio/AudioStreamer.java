@@ -3,7 +3,6 @@ package com.github.langebangen.kensa.audio;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.validator.Validator;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +16,14 @@ import sx.blah.discord.util.audio.providers.URLProvider;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Static utility class for streaming content from a specified url to the {@link AudioPlayer}
@@ -218,15 +218,69 @@ public class AudioStreamer
 					.build();
 		}
 
+
 		for(TrackMeta trackMeta : trackMetas)
 		{
 			ProcessBuilder youtube = new ProcessBuilder("youtube-dl",
 				"-q",
 				"-f", "bestaudio",
-				"--exec", "ffmpeg -hide_banner -nostats -loglevel panic -y -i {} -vn -q:a 6 -f mp3 pipe:1",
-				"-o", "%(id)s", "--", trackMeta.getUrl());
+				"--no-playlist",
+				"-o", "-",
+				"--", trackMeta.getUrl());
+
+			ProcessBuilder ffmpeg = new ProcessBuilder(
+				"ffmpeg",
+				"-hide_banner",
+				"-nostats",
+				"-y",
+				"-i", "-",
+				"-vn" ,
+				"-q:a", "6",
+				"-f", "mp3",  //Format.  mp3
+				"-map", "a",    //Makes sure to only output audio, even if the specified format supports other streams
+				"-preset", "ultrafast",
+				"-ac", "2",     //Channels. Specify 2 for stereo audio.
+				"-ar", "48000", //Rate. Opus requires an audio rate of 48000hz
+				"-"
+			);
 
 			Process yProcess = youtube.start();
+			Process fProcess = ffmpeg.start();
+
+			InputStream from = yProcess.getInputStream();
+			OutputStream to = fProcess.getOutputStream();
+
+			new Thread()
+			{
+				@Override
+				public void run()
+				{
+					byte[] buffer = new byte[1024];
+					int amountRead;
+					try
+					{
+						while(!isInterrupted() && ((amountRead = from.read(buffer)) > -1))
+						{
+							to.write(buffer, 0, amountRead);
+						}
+						to.flush();
+
+						from.close();
+						to.close();
+
+						yProcess.destroy();
+
+						logger.info("Done");
+					}
+					catch(IOException e)
+					{
+						if(!e.getMessage().contains("The pipe has been ended"))
+						{
+							logger.error("While fetching music", e);
+						}
+					}
+				}
+			}.start();
 
 			new Thread("youtube-dl ErrorStream")
 			{
@@ -258,7 +312,7 @@ public class AudioStreamer
 			}.start();
 
 			ExtendedTrack track = new ExtendedTrack(
-					AudioSystem.getAudioInputStream(yProcess.getInputStream()),
+					AudioSystem.getAudioInputStream(fProcess.getInputStream()),
 					trackMeta);
 
 			player.queue(track);
