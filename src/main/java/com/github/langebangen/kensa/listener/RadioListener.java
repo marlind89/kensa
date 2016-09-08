@@ -13,6 +13,7 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.Status;
 import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
+import sx.blah.discord.util.audio.events.TrackFinishEvent;
 import sx.blah.discord.util.audio.events.TrackStartEvent;
 
 import java.io.IOException;
@@ -42,6 +43,15 @@ public class RadioListener
 	public void handleTrackStartEvent(TrackStartEvent event)
 	{
 		client.changeStatus(Status.game(event.getTrack().toString()));
+	}
+
+	@EventSubscriber
+	public void handleTrackFinishEvent(TrackFinishEvent event)
+	{
+		if(event.getNewTrack().isPresent() == false)
+		{
+			client.changeStatus(Status.empty());
+		}
 	}
 
 	@EventSubscriber
