@@ -1,10 +1,9 @@
 package com.github.langebangen.kensa;
 
-import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.AbstractEventListener;
 import com.github.langebangen.kensa.listener.event.*;
-import com.github.langebangen.kensa.util.KensaConstants;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
@@ -14,9 +13,12 @@ import sx.blah.discord.handle.impl.events.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Random;
 
 /**
@@ -29,6 +31,7 @@ public class EventListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
 
+	private final File messageFile;
 	private final Random random;
 
 	/**
@@ -41,6 +44,7 @@ public class EventListener
 	{
 		super(client);
 		this.random = new Random();
+		this.messageFile = new File("messages.txt");
 	}
 
 	/**
@@ -125,9 +129,41 @@ public class EventListener
 		}
 		else
 		{
+			logMessage(content);
 			if((random.nextFloat() * 100) > 99)
 			{
 				sendMessage(textChannel, "YEAH, " + message.getContent().toUpperCase());
+			}
+		}
+	}
+
+	/**
+	 * Logs the message to the message file.
+	 *
+	 * @param message
+	 *      the message
+	 */
+	private void logMessage(String message)
+	{
+		StringBuilder sb = new StringBuilder();
+		for(String word : message.split(" "))
+		{
+			if(UrlValidator.getInstance().isValid(word) == false)
+			{
+				sb.append(word);
+				sb.append(" ");
+			}
+		}
+		String urlFreeMessage = sb.toString();
+		if(urlFreeMessage.isEmpty() == false)
+		{
+			try(FileWriter writer = new FileWriter(messageFile, true))
+			{
+				writer.write(urlFreeMessage);
+			}
+			catch(IOException e)
+			{
+				logger.error("Error writing message to messages file.", e);
 			}
 		}
 	}
