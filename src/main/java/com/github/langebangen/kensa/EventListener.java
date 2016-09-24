@@ -6,6 +6,7 @@ import com.github.langebangen.kensa.listener.event.*;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rita.RiMarkov;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -18,7 +19,6 @@ import sx.blah.discord.util.audio.AudioPlayer;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Random;
 
 /**
@@ -33,18 +33,22 @@ public class EventListener
 
 	private final File messageFile;
 	private final Random random;
+	private final RiMarkov markov;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param client
 	 *      the {@link IDiscordClient}
+	 * @param markov
+	 *      the {@link RiMarkov}
 	 */
-	public EventListener(IDiscordClient client)
+	public EventListener(IDiscordClient client, RiMarkov markov)
 	{
 		super(client);
 		this.random = new Random();
 		this.messageFile = new File("messages.txt");
+		this.markov = markov;
 	}
 
 	/**
@@ -139,6 +143,8 @@ public class EventListener
 
 	/**
 	 * Logs the message to the message file.
+	 * Will also update {@link RiMarkov} with the
+	 * message.
 	 *
 	 * @param message
 	 *      the message
@@ -148,15 +154,25 @@ public class EventListener
 		StringBuilder sb = new StringBuilder();
 		for(String word : message.split(" "))
 		{
-			if(UrlValidator.getInstance().isValid(word) == false)
+			if(UrlValidator.getInstance().isValid(word) == false
+					&& word.matches("<@\\d+>") == false)
 			{
-				sb.append(word);
 				sb.append(" ");
+				sb.append(word);
 			}
 		}
 		String urlFreeMessage = sb.toString();
+		urlFreeMessage = urlFreeMessage.trim();
 		if(urlFreeMessage.isEmpty() == false)
 		{
+			// Make the first character upper case and append a dot
+			// to the end of the string if there wasn't any.
+			urlFreeMessage = Character.toUpperCase(urlFreeMessage.charAt(0)) + urlFreeMessage.substring(1);
+			if(urlFreeMessage.charAt(urlFreeMessage.length()-1) != '.')
+			{
+				urlFreeMessage += ".";
+			}
+			markov.loadText(urlFreeMessage);
 			try(FileWriter writer = new FileWriter(messageFile, true))
 			{
 				writer.write(urlFreeMessage);

@@ -5,10 +5,13 @@ import com.github.langebangen.kensa.listener.TextChannelListener;
 import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rita.RiMarkov;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.Opus;
 import sx.blah.discord.util.DiscordException;
+
+import java.io.File;
 
 /**
  * Main class for Kensa.
@@ -40,9 +43,15 @@ public class KensaApp
 				.withToken(args[0])
 				.build();
 
-		dcClient.getDispatcher().registerListener(new EventListener(dcClient));
+		RiMarkov markov = new RiMarkov(3);
+		if(new File("messages.txt").isFile())
+		{
+			markov.loadFrom("messages.txt");
+		}
+
+		dcClient.getDispatcher().registerListener(new EventListener(dcClient, markov));
 		dcClient.getDispatcher().registerListener(new RadioListener(dcClient));
-		dcClient.getDispatcher().registerListener(new TextChannelListener(dcClient));
+		dcClient.getDispatcher().registerListener(new TextChannelListener(dcClient, markov));
 		dcClient.getDispatcher().registerListener(new VoiceChannelListener(dcClient));
 
 		dcClient.login();
