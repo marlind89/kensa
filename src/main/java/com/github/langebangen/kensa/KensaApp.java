@@ -1,17 +1,18 @@
 package com.github.langebangen.kensa;
 
+import com.github.langebangen.kensa.listener.EventListener;
 import com.github.langebangen.kensa.listener.RadioListener;
 import com.github.langebangen.kensa.listener.TextChannelListener;
 import com.github.langebangen.kensa.listener.VoiceChannelListener;
+import com.github.langebangen.kensa.module.KensaModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rita.RiMarkov;
-import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.internal.Opus;
 import sx.blah.discord.util.DiscordException;
-
-import java.io.File;
 
 /**
  * Main class for Kensa.
@@ -39,23 +40,21 @@ public class KensaApp
 			System.exit(0);
 		}
 
-		final IDiscordClient dcClient = new ClientBuilder()
-				.withToken(args[0])
-				.build();
+		Injector injector = Guice.createInjector(new KensaModule(args[0]));
 
-		RiMarkov markov = new RiMarkov(3);
-		if(new File("messages.txt").isFile())
-		{
-			markov.loadFrom("messages.txt");
-		}
-
-		dcClient.getDispatcher().registerListener(new EventListener(dcClient, markov));
-		dcClient.getDispatcher().registerListener(new RadioListener(dcClient));
-		dcClient.getDispatcher().registerListener(new TextChannelListener(dcClient, markov));
-		dcClient.getDispatcher().registerListener(new VoiceChannelListener(dcClient));
-
+		IDiscordClient dcClient = injector.getInstance(IDiscordClient.class);
+		registerListeners(dcClient, injector);
 		dcClient.login();
 
 		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());
+	}
+
+	private static void registerListeners(IDiscordClient dcClient, Injector injector)
+	{
+		EventDispatcher dispatcher = dcClient.getDispatcher();
+		dispatcher.registerListener(injector.getInstance(EventListener.class));
+		dispatcher.registerListener(injector.getInstance(RadioListener.class));
+		dispatcher.registerListener(injector.getInstance(TextChannelListener.class));
+		dispatcher.registerListener(injector.getInstance(VoiceChannelListener.class));
 	}
 }

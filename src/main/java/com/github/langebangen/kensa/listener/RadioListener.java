@@ -4,6 +4,7 @@ import com.github.langebangen.kensa.audio.AudioStreamer;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.inject.Inject;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ public class RadioListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(RadioListener.class);
 
+	@Inject
 	public RadioListener(IDiscordClient client)
 	{
 		super(client);
