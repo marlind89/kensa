@@ -4,6 +4,7 @@ import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.listener.event.BabylonEvent;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
+import com.google.inject.Inject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
@@ -19,6 +20,8 @@ import java.util.List;
 public class VoiceChannelListener
 	extends AbstractEventListener
 {
+
+	@Inject
 	public VoiceChannelListener(IDiscordClient client)
 	{
 		super(client);

@@ -1,5 +1,8 @@
 package com.github.langebangen.kensa.babylon;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -10,13 +13,13 @@ import java.util.Scanner;
 /**
  * @author Martin.
  */
+@Singleton
 public class Babylon
 {
-	public static final Babylon INSTANCE = new Babylon();
-
 	private final Random random;
 	private final List<String> dishes;
 
+	@Inject
 	private Babylon()
 	{
 		this.random = new Random();
@@ -37,9 +40,7 @@ public class Babylon
 		while(scanner.hasNextLine())
 		{
 			String dish = scanner.nextLine();
-			System.out.println(dish);
 			String ingredients = scanner.nextLine();
-			System.out.println(ingredients);
 			dishes.add(dish + "\n" + ingredients);
 		}
 	}

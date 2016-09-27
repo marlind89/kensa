@@ -21,7 +21,9 @@ public enum Action
 	PAUSE    ("pause", "Pauses the music player. 'on' to pause and 'off' to resume the player."),
 	SEARCH   ("search", "Search and display the eight best matches from youtube."),
 	CLEAR    ("clear", "Clears the playlist."),
-	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!");
+	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!"),
+	INSULT   ("insult", "Insults the specified person. The person should be mentioned for this to work. Use !insult add to add an insult. " +
+			          "!insult remove to remove the previous insult from the insult list");
 
 	private final String action;
 	private final String description;
