@@ -186,7 +186,7 @@ public class EventListener
 		for(String word : message.split(" "))
 		{
 			if(UrlValidator.getInstance().isValid(word) == false
-					&& word.matches("<@\\d+>") == false)
+					&& word.matches("<@!*\\d+>") == false)
 			{
 				sb.append(" ");
 				sb.append(word);
