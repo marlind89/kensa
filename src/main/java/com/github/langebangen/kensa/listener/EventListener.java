@@ -3,6 +3,7 @@ package com.github.langebangen.kensa.listener;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.inject.Inject;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public class EventListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
 
+	private static final String PUNCTUATIONS = ".!?";
 	private final File messageFile;
 	private final Random random;
 	private final RiMarkov markov;
@@ -196,13 +198,7 @@ public class EventListener
 		urlFreeMessage = urlFreeMessage.trim();
 		if(urlFreeMessage.isEmpty() == false)
 		{
-			// Make the first character upper case and append a dot
-			// to the end of the string if there wasn't any.
-			urlFreeMessage = Character.toUpperCase(urlFreeMessage.charAt(0)) + urlFreeMessage.substring(1);
-			if(urlFreeMessage.charAt(urlFreeMessage.length()-1) != '.')
-			{
-				urlFreeMessage += ".";
-			}
+			urlFreeMessage = formatSentence(urlFreeMessage);
 			markov.loadText(urlFreeMessage);
 			try(FileWriter writer = new FileWriter(messageFile, true))
 			{
@@ -213,5 +209,50 @@ public class EventListener
 				logger.error("Error writing message to messages file.", e);
 			}
 		}
+	}
+
+	/**
+	 * Adds white spaces after dots and makes the character
+	 * after the dot and whitespace upper case.
+	 *
+	 * @param message
+	 *      the message to format
+	 *
+	 * @return
+	 *      the formatted sentence
+	 */
+	private static String formatSentence(String message)
+	{
+		// Make the first character upper case and append a dot
+		// to the end of the string if there wasn't any.
+		message = Character.toUpperCase(message.charAt(0)) + message.substring(1);
+		if(message.charAt(message.length()-1) != '.')
+		{
+			message += ".";
+		}
+
+		StringBuilder sb = new StringBuilder();
+		char[] chars = message.toCharArray();
+		for(int i=0; i<chars.length; i++)
+		{
+			char c = chars[i];
+			sb.append(c);
+			if(PUNCTUATIONS.contains("" + c) && i <= chars.length-2)
+			{
+				char c2 = chars[++i];
+				char c3;
+				if(c2 != ' ')
+				{
+					sb.append(' ');
+					c3 = c2;
+				}
+				else
+				{
+					c3 = chars[++i];
+				}
+				sb.append(Character.toUpperCase(c3));
+			}
+		}
+		return sb.toString();
 	}
 }
