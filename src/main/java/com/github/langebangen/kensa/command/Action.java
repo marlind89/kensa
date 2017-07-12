@@ -18,8 +18,8 @@ public enum Action
 	LOOP     ("loop", "Enables/disables looping of the playlist. 'on' to enable looping and 'off' to disable it. Disabled by default."),
 	SHUFFLE  ("shuffle", "Shuffles the playlist."),
 	PLAYLIST ("playlist", "Shows the playlist."),
-	PAUSE    ("pause", "Pauses the music player. 'on' to pause and 'off' to resume the player."),
-	SEARCH   ("search", "Search and display the eight best matches from youtube."),
+	PAUSE    ("pause", "Pauses the music audioPlayer. 'on' to pause and 'off' to resume the audioPlayer."),
+	SEARCH   ("search", "Search and display the best matches from youtube."),
 	CLEAR    ("clear", "Clears the playlist."),
 	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!"),
 	INSULT   ("insult", "Insults the specified person. The person should be mentioned for this to work. Use !insult add to add an insult. " +

@@ -1,178 +1,100 @@
 package com.github.langebangen.kensa.listener;
 
-import com.github.langebangen.kensa.audio.AudioStreamer;
+import com.github.langebangen.kensa.audio.MusicPlayer;
+import com.github.langebangen.kensa.audio.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.*;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.github.langebangen.kensa.util.TrackUtils;
 import com.google.inject.Inject;
-import org.apache.commons.io.IOUtils;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.Status;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.util.MessageBuilder;
-import sx.blah.discord.util.audio.AudioPlayer;
-import sx.blah.discord.util.audio.events.TrackFinishEvent;
-import sx.blah.discord.util.audio.events.TrackStartEvent;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
  * @author Martin.
  */
 public class RadioListener
-		extends AbstractEventListener
+	extends AbstractEventListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(RadioListener.class);
+	private final MusicPlayerManager playerFactory;
 
 	@Inject
-	public RadioListener(IDiscordClient client)
+	public RadioListener(IDiscordClient client, MusicPlayerManager playerFactory)
 	{
 		super(client);
+		this.playerFactory = playerFactory;
 	}
 
 	@EventSubscriber
 	public void handlePlayAudioEvent(PlayAudioEvent event)
 	{
-		AudioStreamer.stream(event.getUrl(), event.getTextChannel());
-	}
-
-	@EventSubscriber
-	public void handleTrackStartEvent(TrackStartEvent event)
-	{
-		client.changeStatus(Status.game(event.getTrack().toString()));
-	}
-
-	@EventSubscriber
-	public void handleTrackFinishEvent(TrackFinishEvent event)
-	{
-		if(event.getNewTrack().isPresent() == false)
-		{
-			client.changeStatus(Status.empty());
-		}
+		getPlayer(event).stream(event.getUrl(), event.getTextChannel());
 	}
 
 	@EventSubscriber
 	public void handleSearchYoutubeEvent(SearchYoutubeEvent event)
 	{
-		try
-		{
-			ProcessBuilder info = new ProcessBuilder(
-					"youtube-dl",
-					"ytsearch8:" + event.getSearchQuery(),
-					"-q",
-					"-j",
-					"--flat-playlist",
-					"--ignore-errors",
-					"--skip-download"
-			);
-
-			Process infoProcess = info.start();
-			byte[] infoData = IOUtils.toByteArray(infoProcess.getInputStream());
-
-			String sInfo = new String(infoData, Charset.forName("ISO-8859-1"));
-			Scanner scanner = new Scanner(sInfo);
-			JsonParser parser = new JsonParser();
-
-			List<String> youtubeIds = new ArrayList<>();
-			while(scanner.hasNextLine())
-			{
-				JsonObject json = parser.parse(scanner.nextLine()).getAsJsonObject();
-				youtubeIds.add(json.get("id").getAsString());
-			}
-
-			List<String> commandList = new LinkedList<>(Arrays.asList("youtube-dl",
-					"-q", "--ignore-errors",
-					"--skip-download", "-e",
-					"--get-duration",
-					"--"));
-			commandList.addAll(youtubeIds);
-			Process titleFetcher = new ProcessBuilder(commandList).start();
-
-			byte[] titlesBytes = IOUtils.toByteArray(titleFetcher.getInputStream());
-			String titles = new String(titlesBytes, Charset.forName("ISO-8859-1"));
-			scanner = new Scanner(titles);
-
-			MessageBuilder messageBuilder = new MessageBuilder(client)
-					.withChannel(event.getTextChannel())
-					.appendContent("```");
-			int i = 0;
-			while(scanner.hasNextLine())
-			{
-				String youtubeId = youtubeIds.get(i++);
-				String title = scanner.nextLine();
-				String duration = scanner.nextLine();
-
-				messageBuilder.appendContent(youtubeId);
-				messageBuilder.appendContent(" - " + title + " [" + duration + "]\n");
-			}
-			messageBuilder.appendContent("```");
-			sendMessage(messageBuilder);
-		}
-		catch(IOException e)
-		{
-			logger.error("Error when fetching information from " +
-					"youtube-dl when perform a youtube search.", e);
-		}
+		getPlayer(event).searchYoutube(event);
 	}
-
 
 	@EventSubscriber
 	public void handleSkipTrackEvent(SkipTrackEvent event)
 	{
 		String skipAmountString = event.getSkipAmount();
-		AudioPlayer player = event.getPlayer();
-
+		MusicPlayer musicPlayer = getPlayer(event);
 		if(skipAmountString == null)
 		{
 			//Skip current song
-			player.skip();
+			musicPlayer.skipTrack();
+		}
+		else if(!isInteger(skipAmountString))
+		{
+			sendMessage(event.getTextChannel(), "That's not a valid number!");
 		}
 		else
 		{
-			if(isInteger(skipAmountString) == false)
-			{
-				sendMessage(event.getTextChannel(), "That's not a valid number!");
-			}
-			else
-			{
-				int skipAmount = Integer.parseInt(skipAmountString);
-				player.skipTo(skipAmount);
-			}
+			int skipAmount = Integer.parseInt(skipAmountString);
+			musicPlayer.skipTrack(skipAmount);
 		}
 	}
 
 	@EventSubscriber
 	public void handleCurrentTrackRequestEvent(CurrentTrackRequestEvent event)
 	{
-		AudioPlayer.Track currentTrack = event.getCurrentTrack();
-
+		AudioTrack currentSong = getPlayer(event).getCurrentTrack();
 		sendMessage(new MessageBuilder(client)
-				.withChannel(event.getTextChannel())
-				.appendContent("Current song: ")
-				.appendContent(currentTrack != null ? event.getCurrentTrack().toString() : "none", MessageBuilder.Styles.BOLD));
+			.withChannel(event.getTextChannel())
+			.appendContent("Current song: ")
+			.appendContent(currentSong != null
+				? TrackUtils.getReadableTrack(currentSong)
+				: "none", MessageBuilder.Styles.BOLD));
 	}
 
 	@EventSubscriber
 	public void handleLoopPlaylistEvent(LoopPlaylistEvent event)
 	{
 		IChannel channel = event.getTextChannel();
-		AudioPlayer player = event.getPlayer();
+		IGuild guild = channel.getGuild();
 		String loopEnabled = event.getLoopEnabled() == null
 				? ""
 				: event.getLoopEnabled();
+		MusicPlayer musicPlayer = getPlayer(event);
 		switch(loopEnabled)
 		{
 			case "on":
-				player.setLoop(true);
+				musicPlayer.setLoopEnabled(true);
 				sendMessage(channel, "Looping enabled.");
 				break;
 			case "off":
-				player.setLoop(false);
+				musicPlayer.setLoopEnabled(false);
 				sendMessage(channel, "Looping disabled.");
 				break;
 			default:
@@ -183,14 +105,14 @@ public class RadioListener
 	@EventSubscriber
 	public void handleShuffleEvent(ShufflePlaylistEvent event)
 	{
-		event.getPlayer().shuffle();
+		getPlayer(event).shuffle();
 		sendMessage(event.getTextChannel(), "Playlist shuffled!");
 	}
 
 	@EventSubscriber
 	public void handleShowPlaylistEvent(ShowPlaylistEvent event)
 	{
-		List<AudioPlayer.Track> playlist = event.getPlayer().getPlaylist();
+		List<AudioTrack> playlist = getPlayer(event).getPlayList();
 		if(playlist.isEmpty())
 		{
 			sendMessage(event.getTextChannel(), "No songs added to the playlist.");
@@ -202,9 +124,23 @@ public class RadioListener
 					.appendContent("```");
 
 			int i = 1;
-			for(AudioPlayer.Track track : playlist)
+			String moreSongs = " \n and %d more...";
+			for(AudioTrack track : playlist)
 			{
-				messageBuilder.appendContent(String.format("\n %d. %s", i++, track));
+				// The playlist size may be too large to send a message in
+				// as the maximum message may be 2000 characters long.
+				// Reserving two digits for the amount of songs
+				String trackString = String.format("\n %d. %s", i++, TrackUtils.getReadableTrack(track));
+				if((trackString.length() + messageBuilder.getContent().length()) < (2000 - moreSongs.length() - 2))
+				{
+					messageBuilder.appendContent(trackString);
+				}
+				else
+				{
+					// We have reached the limit, print out the more songs string
+					messageBuilder.appendContent(String.format(moreSongs, playlist.size() - i + 1));
+					break;
+				}
 			}
 			messageBuilder.appendContent("```");
 			sendMessage(messageBuilder);
@@ -214,26 +150,26 @@ public class RadioListener
 	@EventSubscriber
 	public void handleClearPlaylistEvent(ClearPlaylistEvent event)
 	{
-		event.getPlayer().clear();
+		getPlayer(event).clearPlaylist();
 		sendMessage(event.getTextChannel(), "Playlist cleared.");
 	}
 
 	@EventSubscriber
 	public void handlePauseEvent(PauseEvent event)
 	{
-		AudioPlayer player = event.getPlayer();
+		MusicPlayer musicPlayer = getPlayer(event);
 		IChannel channel = event.getTextChannel();
-
 		String shouldPause = event.shouldPause() == null
-				? ""
-				: event.shouldPause();
+			? ""
+			: event.shouldPause();
+
 		switch(shouldPause)
 		{
 			case "on":
-				player.setPaused(true);
+				musicPlayer.pause(true);
 				break;
 			case "off":
-				player.setPaused(false);
+				musicPlayer.pause( false);
 				break;
 			default:
 				sendMessage(channel, "Invalid pause command. Specify on or off, e.g. \"!pause on\"");
@@ -271,4 +207,19 @@ public class RadioListener
 		}
 		return true;
 	}
+
+	/**
+	 * Gets the {@link MusicPlayer} associated with the specified {@link KensaEvent}
+	 *
+	 * @param event
+	 * 		the {@link KensaEvent}
+	 *
+	 * @return
+	 * 		the {@link MusicPlayer} associated with the specified {@link KensaEvent}
+	 */
+	private MusicPlayer getPlayer(KensaEvent event)
+	{
+		return playerFactory.getMusicPlayer(event);
+	}
+
 }
