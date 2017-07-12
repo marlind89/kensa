@@ -3,7 +3,6 @@ package com.github.langebangen.kensa.listener;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.inject.Inject;
-import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;

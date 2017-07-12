@@ -1,9 +1,5 @@
 package com.github.langebangen.kensa.module;
 
-import com.github.langebangen.kensa.listener.EventListener;
-import com.github.langebangen.kensa.listener.RadioListener;
-import com.github.langebangen.kensa.listener.TextChannelListener;
-import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
