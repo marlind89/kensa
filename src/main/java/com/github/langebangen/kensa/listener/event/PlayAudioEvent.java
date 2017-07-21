@@ -9,15 +9,35 @@ import sx.blah.discord.util.audio.AudioPlayer;
 public class PlayAudioEvent extends KensaRadioEvent
 {
 	private final String url;
+	private final boolean isPlaylistRequest;
 
-	public PlayAudioEvent(IChannel textChannel, AudioPlayer player, String url)
+	public PlayAudioEvent(IChannel textChannel, AudioPlayer player, String identifier,
+		boolean isPlaylistRequest)
 	{
 		super(textChannel, player);
-		this.url = url;
+		this.url = identifier;
+		this.isPlaylistRequest = isPlaylistRequest;
 	}
 
-	public String getUrl()
+	/**
+	 * Gets the song identity requested
+	 *
+	 * @return
+	 * 		the song identity requested
+	 */
+	public String getSongIdentity()
 	{
 		return url;
+	}
+
+	/**
+	 * Returns whether this is a playlist request event
+	 *
+	 * @return
+	 * 		whether this is a playlist request event
+	 */
+	public boolean isPlaylistRequest()
+	{
+		return isPlaylistRequest;
 	}
 }

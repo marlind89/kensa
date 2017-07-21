@@ -98,8 +98,8 @@ public class EventListener
 					kensaEvent = new BabylonEvent(textChannel);
 					break;
 				case INSULT:
-					String[] split = argument.split(" ");
-					String insultType = split[0];
+					String[] insultArgs = argument.split(" ");
+					String insultType = insultArgs[0];
 					if(insultType.startsWith("<"))
 					{
 						String userId = insultType.replaceAll("[^\\d]", "");
@@ -111,7 +111,8 @@ public class EventListener
 					}
 					else if(insultType.equals("add"))
 					{
-						String insult = StringUtils.join(Arrays.copyOfRange(split, 1, split.length), " ");
+						String insult = StringUtils
+							.join(Arrays.copyOfRange(insultArgs, 1, insultArgs.length), " ");
 						kensaEvent = new InsultPersistEvent(textChannel, true, insult);
 					}
 					else if(insultType.equals("remove"))
@@ -119,7 +120,6 @@ public class EventListener
 						kensaEvent = new InsultPersistEvent(textChannel, false, null);
 					}
 					break;
-
 				/* Voice channel commands */
 				case JOIN:
 					kensaEvent = new JoinVoiceChannelEvent(textChannel, argument);
@@ -127,10 +127,10 @@ public class EventListener
 				case LEAVE:
 					kensaEvent = new LeaveVoiceChannelEvent(textChannel);
 					break;
-
 				/* Radio commands */
 				case PLAY:
-					kensaEvent = new PlayAudioEvent(textChannel, player, argument);
+					String playArg = argument.replace("-p ", "");
+					kensaEvent = new PlayAudioEvent(textChannel, player, playArg, !playArg.equals(argument));
 					break;
 				case SKIP:
 					kensaEvent = new SkipTrackEvent(textChannel, player, argument);
@@ -151,7 +151,8 @@ public class EventListener
 					kensaEvent = new PauseEvent(textChannel, player, argument);
 					break;
 				case SEARCH:
-					kensaEvent = new SearchYoutubeEvent(textChannel, argument);
+					String searchArg = argument.replace("-p ", "");
+					kensaEvent = new SearchYoutubeEvent(textChannel, searchArg, !searchArg.equals(argument));
 					break;
 				case CLEAR:
 					kensaEvent = new ClearPlaylistEvent(textChannel, player);

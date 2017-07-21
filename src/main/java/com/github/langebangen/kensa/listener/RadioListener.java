@@ -36,7 +36,7 @@ public class RadioListener
 	@EventSubscriber
 	public void handlePlayAudioEvent(PlayAudioEvent event)
 	{
-		getPlayer(event).stream(event.getUrl(), event.getTextChannel());
+		getPlayer(event).stream(event);
 	}
 
 	@EventSubscriber
