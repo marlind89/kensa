@@ -40,6 +40,9 @@ public class RadioListener
 	private static final Logger logger = LoggerFactory.getLogger(RadioListener.class);
 	private final MusicPlayerManager playerFactory;
 
+	private static final String PLAY_PAUSE_EMOJI = "\u23EF";
+	private static final String NEXT_TRACK_EMOJI = "\u23ed";
+
 	@Inject
 	public RadioListener(IDiscordClient client, MusicPlayerManager playerFactory)
 	{
@@ -163,8 +166,8 @@ public class RadioListener
 			RequestBuilder builder = new RequestBuilder(client);
 			builder.shouldBufferRequests(true);
 
-			builder.doAction(() -> addReaction(message,"⏯"))
-				.andThen(() -> addReaction(message,"⏭"));
+			builder.doAction(() -> addReaction(message, PLAY_PAUSE_EMOJI))
+				.andThen(() -> addReaction(message, NEXT_TRACK_EMOJI));
 
 			builder.execute();
 		}
@@ -210,10 +213,10 @@ public class RadioListener
 				MusicPlayer player = playerFactory.getMusicPlayer(event.getGuild());
 				switch(emoji.getUnicode())
 				{
-					case "⏯":
+					case PLAY_PAUSE_EMOJI:
 						player.pause(!player.isPaused());
 						break;
-					case "⏭":
+					case NEXT_TRACK_EMOJI:
 						player.skipTrack();
 						break;
 				}
