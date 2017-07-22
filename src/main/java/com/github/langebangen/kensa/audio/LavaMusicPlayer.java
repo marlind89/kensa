@@ -142,6 +142,12 @@ public class LavaMusicPlayer
 	}
 
 	@Override
+	public boolean isPaused()
+	{
+		return trackScheduler.isPaused();
+	}
+
+	@Override
 	public void setLoopEnabled(boolean loopEnabled)
 	{
 		trackScheduler.setLooping(loopEnabled);

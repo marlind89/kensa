@@ -1,5 +1,25 @@
 package com.github.langebangen.kensa.listener;
 
+import static com.github.langebangen.kensa.storage.generated.Tables.INSULT;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import rita.RiMarkov;
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MentionEvent;
+import sx.blah.discord.util.MessageBuilder;
+
+import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.listener.event.BabylonEvent;
@@ -7,27 +27,10 @@ import com.github.langebangen.kensa.listener.event.HelpEvent;
 import com.github.langebangen.kensa.listener.event.InsultEvent;
 import com.github.langebangen.kensa.listener.event.InsultPersistEvent;
 import com.github.langebangen.kensa.storage.Storage;
-import com.github.langebangen.kensa.storage.generated.tables.Insult;
 import com.github.langebangen.kensa.storage.generated.tables.records.InsultRecord;
 import com.github.langebangen.kensa.util.KensaConstants;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rita.RiMarkov;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.MentionEvent;
-import sx.blah.discord.util.MessageBuilder;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static com.github.langebangen.kensa.storage.generated.Tables.INSULT;
 
 
 /**
@@ -115,7 +118,7 @@ public class TextChannelListener
 	@EventSubscriber
 	public void onInsultPersistEvent(InsultPersistEvent event)
 	{
-		if(event.isAdded() == false && lastInsultId == -1)
+		if(!event.isAdded() && lastInsultId == -1)
 		{
 			sendMessage(event.getTextChannel(), "No previous insult to remove!");
 		}
@@ -126,7 +129,7 @@ public class TextChannelListener
 			if(event.isAdded())
 			{
 				String insult = event.getInsult();
-				if(insult != null && insult.isEmpty() == false)
+				if(insult != null && !insult.isEmpty())
 				{
 					InsultRecord insultRecord = create.newRecord(INSULT);
 					insultRecord.setText(event.getInsult());

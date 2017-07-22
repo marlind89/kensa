@@ -1,12 +1,11 @@
 package com.github.langebangen.kensa.listener;
 
-import com.github.langebangen.kensa.command.Action;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.DiscordException;
+import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.MessageBuilder;
-import sx.blah.discord.util.MissingPermissionsException;
-import sx.blah.discord.util.RateLimitException;
+
+import com.github.langebangen.kensa.command.Action;
 
 /**
  * @author Martin.
@@ -47,14 +46,17 @@ public abstract class AbstractEventListener
 	 *      the {@link IChannel}
 	 * @param message
 	 *      the message
+	 *
+	 * @return
+	 * 		the sent {@link IMessage}
 	 */
-	protected void sendMessage(IChannel channel, String message)
+	protected IMessage sendMessage(IChannel channel, String message)
 	{
 		MessageBuilder builder = new MessageBuilder(client)
 				.withChannel(channel)
 				.withContent(message);
 
-		sendMessage(builder);
+		return sendMessage(builder);
 	}
 
 	/**
@@ -63,16 +65,12 @@ public abstract class AbstractEventListener
 	 *
 	 * @param messageBuilder
 	 *      the {@link MessageBuilder}
+	 *
+	 * @return
+	 * 		the sent {@link IMessage}
 	 */
-	protected void sendMessage(MessageBuilder messageBuilder)
+	protected IMessage sendMessage(MessageBuilder messageBuilder)
 	{
-		try
-		{
-			messageBuilder.send();
-		}
-		catch(DiscordException | RateLimitException | MissingPermissionsException e)
-		{
-			e.printStackTrace();
-		}
+		return messageBuilder.send();
 	}
 }

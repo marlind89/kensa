@@ -1,21 +1,35 @@
 package com.github.langebangen.kensa.listener;
 
-import com.github.langebangen.kensa.audio.MusicPlayer;
-import com.github.langebangen.kensa.audio.MusicPlayerManager;
-import com.github.langebangen.kensa.listener.event.*;
-import com.github.langebangen.kensa.util.TrackUtils;
-import com.google.inject.Inject;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import java.util.List;
+
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.util.MessageBuilder;
+import sx.blah.discord.util.RequestBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.util.MessageBuilder;
 
-import java.util.*;
+import com.github.langebangen.kensa.audio.MusicPlayer;
+import com.github.langebangen.kensa.audio.MusicPlayerManager;
+import com.github.langebangen.kensa.listener.event.ClearPlaylistEvent;
+import com.github.langebangen.kensa.listener.event.CurrentTrackRequestEvent;
+import com.github.langebangen.kensa.listener.event.KensaEvent;
+import com.github.langebangen.kensa.listener.event.LoopPlaylistEvent;
+import com.github.langebangen.kensa.listener.event.PauseEvent;
+import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
+import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
+import com.github.langebangen.kensa.listener.event.ShowPlaylistEvent;
+import com.github.langebangen.kensa.listener.event.ShufflePlaylistEvent;
+import com.github.langebangen.kensa.listener.event.SkipTrackEvent;
+import com.github.langebangen.kensa.util.TrackUtils;
+import com.google.inject.Inject;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.vdurmont.emoji.Emoji;
 
 /**
  * @author Martin.
@@ -128,10 +142,11 @@ public class RadioListener
 			for(AudioTrack track : playlist)
 			{
 				// The playlist size may be too large to send a message in
-				// as the maximum message may be 2000 characters long.
+				// as the maximum message may be IMessage.MAX_MESSAGE_LENGTH characters long.
 				// Reserving two digits for the amount of songs
 				String trackString = String.format("\n %d. %s", i++, TrackUtils.getReadableTrack(track));
-				if((trackString.length() + messageBuilder.getContent().length()) < (2000 - moreSongs.length() - 2))
+				if((trackString.length() + messageBuilder.getContent().length()) <
+					(IMessage.MAX_MESSAGE_LENGTH - moreSongs.length() - 2))
 				{
 					messageBuilder.appendContent(trackString);
 				}
@@ -143,7 +158,15 @@ public class RadioListener
 				}
 			}
 			messageBuilder.appendContent("```");
-			sendMessage(messageBuilder);
+			IMessage message = sendMessage(messageBuilder);
+
+			RequestBuilder builder = new RequestBuilder(client);
+			builder.shouldBufferRequests(true);
+
+			builder.doAction(() -> addReaction(message,"⏯"))
+				.andThen(() -> addReaction(message,"⏭"));
+
+			builder.execute();
 		}
 	}
 
@@ -173,6 +196,28 @@ public class RadioListener
 				break;
 			default:
 				sendMessage(channel, "Invalid pause command. Specify on or off, e.g. \"!pause on\"");
+		}
+	}
+
+	@EventSubscriber
+	public void handleReactionEvent(ReactionEvent event)
+	{
+		if(!event.getUser().isBot())
+		{
+			Emoji emoji = event.getReaction().getUnicodeEmoji();
+			if(emoji != null)
+			{
+				MusicPlayer player = playerFactory.getMusicPlayer(event.getGuild());
+				switch(emoji.getUnicode())
+				{
+					case "⏯":
+						player.pause(!player.isPaused());
+						break;
+					case "⏭":
+						player.skipTrack();
+						break;
+				}
+			}
 		}
 	}
 	
@@ -222,4 +267,9 @@ public class RadioListener
 		return playerFactory.getMusicPlayer(event);
 	}
 
+	private boolean addReaction(IMessage message, String reaction)
+	{
+		message.addReaction(reaction);
+		return true;
+	}
 }

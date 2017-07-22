@@ -94,4 +94,12 @@ public interface MusicPlayer
      *      true to pause, false to play
      */
     void pause(boolean pause);
+
+    /**
+     * Returns whether this player is paused
+     *
+     * @return
+     *      whether this player is paused
+     */
+    boolean isPaused();
 }
