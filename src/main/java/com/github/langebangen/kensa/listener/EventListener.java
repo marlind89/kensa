@@ -11,8 +11,8 @@ import rita.RiMarkov;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
@@ -103,7 +103,7 @@ public class EventListener
 					if(insultType.startsWith("<"))
 					{
 						String userId = insultType.replaceAll("[^\\d]", "");
-						IUser userToInsult = message.getGuild().getUserByID(userId);
+						IUser userToInsult = message.getGuild().getUserByID(Long.parseLong(userId));
 						if(userToInsult != null)
 						{
 							kensaEvent = new InsultEvent(textChannel, userToInsult);
