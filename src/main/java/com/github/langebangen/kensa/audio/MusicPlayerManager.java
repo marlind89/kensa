@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.handle.obj.ActivityType;
 import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.StatusType;
 
 import com.github.langebangen.kensa.listener.event.KensaEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
@@ -35,6 +37,7 @@ public class MusicPlayerManager
 {
 	public final Map<Long, MusicPlayer> musicPlayers;
 	private final AudioPlayerManager playerManager;
+	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final IDiscordClient client;
 
@@ -46,6 +49,7 @@ public class MusicPlayerManager
 		this.playerManager = new DefaultAudioPlayerManager();
 		YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(true);
 		ytSearchProvider = new YoutubeSearchProvider(ytSourceManager);
+		ytPlaylistSearchProvider = new YoutubePlaylistSearchProvider(ytSourceManager);
 		playerManager.registerSourceManager(ytSourceManager);
 		playerManager.registerSourceManager(new SoundCloudAudioSourceManager());
 		playerManager.registerSourceManager(new BandcampAudioSourceManager());
@@ -89,9 +93,10 @@ public class MusicPlayerManager
 		if(musicPlayer == null)
 		{
 			AudioPlayer audioPlayer = playerManager.createPlayer();
+			audioPlayer.setVolume(50);
 			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
 			audioPlayer.addListener(scheduler);
-			musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider);
+			musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider, ytPlaylistSearchProvider);
 			guild.getAudioManager().setAudioProvider(new AudioProvider(audioPlayer));
 			musicPlayers.put(guildId, musicPlayer);
 		}
@@ -115,7 +120,7 @@ public class MusicPlayerManager
 	{
 		/**
 		 * @param player
-		 * 	The audio audioPlayer this scheduler uses
+		 * 	The audio player this scheduler uses
 		 */
 		public ClientTrackScheduler(AudioPlayer player)
 		{
@@ -126,7 +131,7 @@ public class MusicPlayerManager
 		public void onTrackStart(AudioPlayer player, AudioTrack track)
 		{
 			super.onTrackStart(player, track);
-			client.changePlayingText(TrackUtils.getReadableTrack(track));
+			client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, TrackUtils.getReadableTrack(track));
 		}
 
 		@Override
@@ -134,7 +139,7 @@ public class MusicPlayerManager
 		{
 			if(!hasNextTrack())
 			{
-				client.changePlayingText(null);
+				client.changePresence(StatusType.ONLINE);
 			}
 			super.onTrackEnd(player, track, endReason);
 		}

@@ -159,6 +159,17 @@ public class TrackScheduler
 		player.setPaused(pause);
 	}
 
+	/**
+	 * Returns whether this player is paused
+	 *
+	 * @return
+	 *      whether this player is paused
+	 */
+	public boolean isPaused()
+	{
+		return player.isPaused();
+	}
+
 	@Override
 	public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
 	{

@@ -1,5 +1,11 @@
 package com.github.langebangen.kensa.command;
 
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IRole;
+import sx.blah.discord.handle.obj.IUser;
+
+import com.github.langebangen.kensa.role.KensaRole;
+
 /**
  * Class describing the actions Kensa supports.
  *
@@ -10,36 +16,37 @@ public enum Action
 	HELP     ("help", "Shows this help description."),
 	JOIN     ("join", "Joins the specified voice channel."),
 	LEAVE    ("leave", "Leaves the current channel Kensa is in."),
-	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports youtube links " +
-			          "and urls that ends with .mp3, .ogg, .flac, or .wav. If the argument is neither of this then it will search on youtube " +
-			          "and queue the song which had the best match."),
+	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports streaming from several sites such"
+		+ " as youtube, twitch, soundcloud, bandcamp, vimeo and direct links to tracks. If the identity provided wasn't found on any of the"
+		+ " supported sites, a youtube search is performed and the first match is queued. Add '-p' before the identity to search and queue the"
+		+ " first playlist match from youtube. If no playlist was found, kensa will perform a normal youtube search and compile a playlist of the matches."),
 	SKIP     ("skip", "Skips the current song and additional future songs if a number is provided."),
 	SONG     ("song", "Shows the current track."),
 	LOOP     ("loop", "Enables/disables looping of the playlist. 'on' to enable looping and 'off' to disable it. Disabled by default."),
 	SHUFFLE  ("shuffle", "Shuffles the playlist."),
 	PLAYLIST ("playlist", "Shows the playlist."),
 	PAUSE    ("pause", "Pauses the music audioPlayer. 'on' to pause and 'off' to resume the audioPlayer."),
-	SEARCH   ("search", "Search and display the best matches from youtube."),
+	SEARCH   ("search", "Search and display the best matches from youtube. Add '-p' to search for playlists only."),
 	CLEAR    ("clear", "Clears the playlist."),
 	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!"),
 	INSULT   ("insult", "Insults the specified person. The person should be mentioned for this to work. Use !insult add to add an insult. " +
-			          "!insult remove to remove the previous insult from the insult list");
+			          "!insult remove to remove the previous insult from the insult list"),
+	RESTART ("restart", "Restarts kensa", KensaRole.ADMIN);
 
 	private final String action;
 	private final String description;
+	private final KensaRole requiresRole;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param command
-	 *      the command
-	 * @param description
-	 *      the description
-	 */
 	Action(String command, String description)
+	{
+		this(command, description, null);
+	}
+
+	Action(String command, String description, KensaRole requiresRole)
 	{
 		this.action = "!" + command;
 		this.description = description;
+		this.requiresRole = requiresRole;
 	}
 
 	/**
@@ -85,4 +92,11 @@ public enum Action
 		return null;
 	}
 
+	public boolean hasPermission(IUser user, IGuild guild)
+	{
+		return requiresRole == null ||
+			user.getRolesForGuild(guild)
+				.stream()
+				.anyMatch(x -> x.getName().equals(requiresRole.GetRoleName()));
+	}
 }

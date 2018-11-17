@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.internal.Opus;
+import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.util.DiscordException;
 
 /**
@@ -34,17 +35,28 @@ public class KensaApp
 	public static void main(String[] args)
 		throws DiscordException
 	{
-		if(args.length != 1)
+		if(args.length < 1)
 		{
 			System.out.println("The bot token must be provided in main args.");
 			System.exit(0);
 		}
 
-		Injector injector = Guice.createInjector(new KensaModule(args[0]));
+		long voiceChannelId = 0;
+		if (args.length > 1)
+		{
+			String voiceChannelToConnectTo = args[1];
+			if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
+			{
+				voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
+			}
+		}
+
+		Injector injector = Guice.createInjector(new KensaModule(args[0], voiceChannelId));
 
 		IDiscordClient dcClient = injector.getInstance(IDiscordClient.class);
 		registerListeners(dcClient, injector);
 		dcClient.login();
+
 
 		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());
 	}

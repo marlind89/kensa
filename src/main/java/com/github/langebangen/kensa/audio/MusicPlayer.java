@@ -5,6 +5,7 @@ import java.util.List;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 
+import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
@@ -23,12 +24,10 @@ public interface MusicPlayer
      * Streams the content located on the specified URL to the specified audioPlayer.
      * Will send a message that the content has been added to the playlist queue.
      *
-     * @param urlString
-     *      the url string
-     * @param channel
-     *      the {@link IChannel}
+     * @param event
+     * 		the {@link PlayAudioEvent}
      */
-    void stream(String urlString, IChannel channel);
+    void stream(PlayAudioEvent event);
 
     /**
      * Searchs youtube with the specified {@link SearchYoutubeEvent}
@@ -95,4 +94,12 @@ public interface MusicPlayer
      *      true to pause, false to play
      */
     void pause(boolean pause);
+
+    /**
+     * Returns whether this player is paused
+     *
+     * @return
+     *      whether this player is paused
+     */
+    boolean isPaused();
 }

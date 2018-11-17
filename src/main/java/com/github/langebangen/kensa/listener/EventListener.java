@@ -1,5 +1,6 @@
 package com.github.langebangen.kensa.listener;
 
+import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.inject.Inject;
@@ -11,11 +12,12 @@ import rita.RiMarkov;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventDispatcher;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.util.audio.AudioPlayer;
 
 import java.io.File;
@@ -23,6 +25,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+
+import javax.inject.Named;
 
 /**
  * EventListener which listens on events from discord.
@@ -38,6 +42,7 @@ public class EventListener
 	private final File messageFile;
 	private final Random random;
 	private final RiMarkov markov;
+	private final long latestVoiceChannelId;
 
 	/**
 	 * Constructor.
@@ -48,9 +53,11 @@ public class EventListener
 	 *      the {@link RiMarkov}
 	 */
 	@Inject
-	public EventListener(IDiscordClient client, RiMarkov markov)
+	public EventListener(IDiscordClient client, RiMarkov markov,
+		@Named("latestVoiceChannelId") long latestVoiceChannelId)
 	{
 		super(client);
+		this.latestVoiceChannelId = latestVoiceChannelId;
 		this.random = new Random();
 		this.messageFile = new File("messages.txt");
 		this.markov = markov;
@@ -66,6 +73,15 @@ public class EventListener
 	public void onReady(ReadyEvent event)
 	{
 		logger.info("Logged in successfully.!");
+		if (latestVoiceChannelId > 0)
+		{
+			IVoiceChannel voiceChannel = client.getVoiceChannelByID(latestVoiceChannelId);
+			logger.info("Rejoining channel " + voiceChannel.getName());
+			if (voiceChannel != null)
+			{
+				voiceChannel.join();
+			}
+		}
 	}
 
 	/**
@@ -84,11 +100,19 @@ public class EventListener
 		Command command = Command.parseCommand(content);
 		if(command != null)
 		{
+
 			String argument = command.getArgument();
 			AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(message.getGuild());
 			EventDispatcher dispatcher = client.getDispatcher();
 			KensaEvent kensaEvent = null;
-			switch(command.getAction())
+			Action action = command.getAction();
+
+			if (!action.hasPermission(message.getAuthor(), message.getGuild())){
+				sendMessage(textChannel, "You don't have permission do to that, you filthy fool!");
+				return;
+			}
+
+			switch(action)
 			{
 				/* Text channel commands */
 				case HELP:
@@ -98,12 +122,12 @@ public class EventListener
 					kensaEvent = new BabylonEvent(textChannel);
 					break;
 				case INSULT:
-					String[] split = argument.split(" ");
-					String insultType = split[0];
+					String[] insultArgs = argument.split(" ");
+					String insultType = insultArgs[0];
 					if(insultType.startsWith("<"))
 					{
 						String userId = insultType.replaceAll("[^\\d]", "");
-						IUser userToInsult = message.getGuild().getUserByID(userId);
+						IUser userToInsult = message.getGuild().getUserByID(Long.parseLong(userId));
 						if(userToInsult != null)
 						{
 							kensaEvent = new InsultEvent(textChannel, userToInsult);
@@ -111,7 +135,8 @@ public class EventListener
 					}
 					else if(insultType.equals("add"))
 					{
-						String insult = StringUtils.join(Arrays.copyOfRange(split, 1, split.length), " ");
+						String insult = StringUtils
+							.join(Arrays.copyOfRange(insultArgs, 1, insultArgs.length), " ");
 						kensaEvent = new InsultPersistEvent(textChannel, true, insult);
 					}
 					else if(insultType.equals("remove"))
@@ -119,7 +144,6 @@ public class EventListener
 						kensaEvent = new InsultPersistEvent(textChannel, false, null);
 					}
 					break;
-
 				/* Voice channel commands */
 				case JOIN:
 					kensaEvent = new JoinVoiceChannelEvent(textChannel, argument);
@@ -127,10 +151,10 @@ public class EventListener
 				case LEAVE:
 					kensaEvent = new LeaveVoiceChannelEvent(textChannel);
 					break;
-
 				/* Radio commands */
 				case PLAY:
-					kensaEvent = new PlayAudioEvent(textChannel, player, argument);
+					String playArg = argument.replace("-p ", "");
+					kensaEvent = new PlayAudioEvent(textChannel, player, playArg, !playArg.equals(argument));
 					break;
 				case SKIP:
 					kensaEvent = new SkipTrackEvent(textChannel, player, argument);
@@ -151,10 +175,14 @@ public class EventListener
 					kensaEvent = new PauseEvent(textChannel, player, argument);
 					break;
 				case SEARCH:
-					kensaEvent = new SearchYoutubeEvent(textChannel, argument);
+					String searchArg = argument.replace("-p ", "");
+					kensaEvent = new SearchYoutubeEvent(textChannel, searchArg, !searchArg.equals(argument));
 					break;
 				case CLEAR:
 					kensaEvent = new ClearPlaylistEvent(textChannel, player);
+					break;
+				case RESTART:
+					kensaEvent = new RestartKensaEvent(textChannel);
 					break;
 			}
 

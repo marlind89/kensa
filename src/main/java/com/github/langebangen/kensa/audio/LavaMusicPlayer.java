@@ -1,10 +1,12 @@
 package com.github.langebangen.kensa.audio;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.MessageBuilder;
 
+import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -15,6 +17,7 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
 
 /**
@@ -28,44 +31,70 @@ public class LavaMusicPlayer
     private final TrackScheduler trackScheduler;
     private final AudioPlayerManager playerManager;
 	private final YoutubeSearchProvider ytSearchProvider;
+	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
 
     public LavaMusicPlayer(TrackScheduler trackScheduler,
 		AudioPlayerManager playerManager,
-		YoutubeSearchProvider ytSearchProvider)
+		YoutubeSearchProvider ytSearchProvider,
+		YoutubePlaylistSearchProvider ytPlaylistSearchProvider)
     {
         this.trackScheduler = trackScheduler;
         this.playerManager = playerManager;
         this.ytSearchProvider = ytSearchProvider;
+        this.ytPlaylistSearchProvider = ytPlaylistSearchProvider;
     }
 
     @Override
-    public void stream(String urlString, IChannel channel)
+    public void stream(PlayAudioEvent event)
     {
-        loadTrack(urlString, channel);
+        loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest());
     }
 
 	@Override
 	public void searchYoutube(SearchYoutubeEvent event)
 	{
-		AudioItem audioItem = ytSearchProvider.loadSearchResult(event.getSearchQuery());
+		List<AudioTrackInfo> trackInfos = new LinkedList<>();
+		if(event.isPlaylistSearch())
+		{
+			trackInfos.addAll(ytPlaylistSearchProvider.searchPlaylists(event.getSearchQuery()));
+		}
+		else
+		{
+			AudioItem audioItem = ytSearchProvider.loadSearchResult(event.getSearchQuery());
+			if(audioItem instanceof BasicAudioPlaylist)
+			{
+				for(AudioItem item : ((BasicAudioPlaylist)audioItem).getTracks())
+				{
+					if(item instanceof YoutubeAudioTrack)
+					{
+						YoutubeAudioTrack ytTrack = ((YoutubeAudioTrack)item);
+						trackInfos.add(ytTrack.getInfo());
+					}
+				}
+			}
+		}
 
 		MessageBuilder messageBuilder = new MessageBuilder(event.getClient())
 			.withChannel(event.getTextChannel())
 			.appendContent("```");
 
-		if(audioItem instanceof BasicAudioPlaylist)
+		if(trackInfos.isEmpty())
 		{
-			for(AudioItem item : ((BasicAudioPlaylist)audioItem).getTracks())
+			messageBuilder.appendContent("Could not find anything matching the search query.");
+		}
+		else
+		{
+			for(AudioTrackInfo trackInfo : trackInfos)
 			{
-				if(item instanceof YoutubeAudioTrack)
-				{
-					YoutubeAudioTrack ytTrack = ((YoutubeAudioTrack)item);
-					String youtubeId = ytTrack.getIdentifier();
-					String title = ytTrack.getInfo().title;
-					String duration = TrackUtils.getReadableDuration(ytTrack.getDuration());
-					messageBuilder.appendContent(youtubeId);
-					messageBuilder.appendContent(" - " + title + " [" + duration + "]\n");
-				}
+				String youtubeId = trackInfo.identifier;
+				String title = trackInfo.title;
+				// The length will be -1 if its a playlist since the playlist
+				// length is not calculated
+				String duration = trackInfo.length != -1
+					? TrackUtils.getReadableDuration(trackInfo.length)
+					: "";
+				messageBuilder.appendContent(youtubeId);
+				messageBuilder.appendContent(" - " + title + " " + duration + "\n");
 			}
 		}
 		messageBuilder.appendContent("```");
@@ -113,6 +142,12 @@ public class LavaMusicPlayer
 	}
 
 	@Override
+	public boolean isPaused()
+	{
+		return trackScheduler.isPaused();
+	}
+
+	@Override
 	public void setLoopEnabled(boolean loopEnabled)
 	{
 		trackScheduler.setLooping(loopEnabled);
@@ -124,9 +159,21 @@ public class LavaMusicPlayer
 		trackScheduler.shuffle();
 	}
 
-    private void loadTrack(String songIdentity, IChannel channel)
+    private void loadTrack(String songIdentity, IChannel channel, boolean isPlaylistRequest)
     {
-		playerManager.loadItemOrdered(trackScheduler, songIdentity, new AudioLoadResultHandler()
+		String playListIdentifier = null;
+    	if(isPlaylistRequest)
+		{
+			List<AudioTrackInfo> playListIdentifiers = ytPlaylistSearchProvider.searchPlaylists(songIdentity);
+			playListIdentifier = playListIdentifiers.isEmpty()
+				? "ytsearch:" + songIdentity
+				: playListIdentifiers.get(0).identifier;
+		}
+
+		final String identity = playListIdentifier != null
+			? playListIdentifier
+			: songIdentity;
+		playerManager.loadItemOrdered(trackScheduler, identity, new AudioLoadResultHandler()
         {
         	private boolean fallbackSearchPerformed = false;
 
@@ -152,13 +199,14 @@ public class LavaMusicPlayer
 					// We will arrive here upon youtube search fallbacks,
 					// but we only want to queue the first match in this case
 					AudioTrack audioTrack = playlist.getTracks().get(0);
-					loadTrack(audioTrack.getIdentifier(), channel);
+					loadTrack(audioTrack.getIdentifier(), channel, isPlaylistRequest);
 				}
 				else
 				{
 					new MessageBuilder(channel.getClient())
 						.withChannel(channel)
-						.appendContent("Queuing " + playlist.getTracks().size() + " songs..")
+						.appendContent("Queued " )
+						.appendContent(playlist.getName() + " [" + playlist.getTracks().size() + " songs]", MessageBuilder.Styles.BOLD)
 						.build();
 
 					trackScheduler.queue(playlist);
@@ -168,9 +216,9 @@ public class LavaMusicPlayer
             @Override
             public void noMatches()
             {
-            	if(!fallbackSearchPerformed && !songIdentity.startsWith("http"))
+            	if(!fallbackSearchPerformed && !identity.startsWith("http"))
 				{
-					playerManager.loadItemOrdered(trackScheduler,"ytsearch:" + songIdentity, this);
+					playerManager.loadItemOrdered(trackScheduler,"ytsearch:" + identity, this);
 					fallbackSearchPerformed = true;
 				}
 				else
