@@ -4,7 +4,9 @@ import java.util.List;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.api.internal.json.requests.EmojiCreateRequest;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
@@ -30,6 +32,7 @@ import com.github.langebangen.kensa.util.TrackUtils;
 import com.google.inject.Inject;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiManager;
 
 /**
  * @author Martin.
@@ -207,11 +210,11 @@ public class RadioListener
 	{
 		if(!event.getUser().isBot())
 		{
-			Emoji emoji = event.getReaction().getUnicodeEmoji();
+			ReactionEmoji emoji = event.getReaction().getEmoji();
 			if(emoji != null)
 			{
 				MusicPlayer player = playerFactory.getMusicPlayer(event.getGuild());
-				switch(emoji.getUnicode())
+				switch(emoji.getName())
 				{
 					case PLAY_PAUSE_EMOJI:
 						player.pause(!player.isPaused());
@@ -272,7 +275,7 @@ public class RadioListener
 
 	private boolean addReaction(IMessage message, String reaction)
 	{
-		message.addReaction(reaction);
+		message.addReaction(ReactionEmoji.of(reaction));
 		return true;
 	}
 }
