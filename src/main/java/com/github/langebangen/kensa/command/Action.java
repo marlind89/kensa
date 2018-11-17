@@ -1,5 +1,11 @@
 package com.github.langebangen.kensa.command;
 
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IRole;
+import sx.blah.discord.handle.obj.IUser;
+
+import com.github.langebangen.kensa.role.KensaRole;
+
 /**
  * Class describing the actions Kensa supports.
  *
@@ -24,23 +30,23 @@ public enum Action
 	CLEAR    ("clear", "Clears the playlist."),
 	BABYLON  ("babylon", "Chooses a delicious babylon dish for you so you don't have to!"),
 	INSULT   ("insult", "Insults the specified person. The person should be mentioned for this to work. Use !insult add to add an insult. " +
-			          "!insult remove to remove the previous insult from the insult list");
+			          "!insult remove to remove the previous insult from the insult list"),
+	RESTART ("restart", "Restarts kensa", KensaRole.ADMIN);
 
 	private final String action;
 	private final String description;
+	private final KensaRole requiresRole;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param command
-	 *      the command
-	 * @param description
-	 *      the description
-	 */
 	Action(String command, String description)
+	{
+		this(command, description, null);
+	}
+
+	Action(String command, String description, KensaRole requiresRole)
 	{
 		this.action = "!" + command;
 		this.description = description;
+		this.requiresRole = requiresRole;
 	}
 
 	/**
@@ -86,4 +92,11 @@ public enum Action
 		return null;
 	}
 
+	public boolean hasPermission(IUser user, IGuild guild)
+	{
+		return requiresRole == null ||
+			user.getRolesForGuild(guild)
+				.stream()
+				.anyMatch(x -> x.getName().equals(requiresRole.GetRoleName()));
+	}
 }

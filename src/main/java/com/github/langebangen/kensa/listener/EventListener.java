@@ -1,5 +1,6 @@
 package com.github.langebangen.kensa.listener;
 
+import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.inject.Inject;
@@ -16,6 +17,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedE
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.util.audio.AudioPlayer;
 
 import java.io.File;
@@ -23,6 +25,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+
+import javax.inject.Named;
 
 /**
  * EventListener which listens on events from discord.
@@ -38,6 +42,7 @@ public class EventListener
 	private final File messageFile;
 	private final Random random;
 	private final RiMarkov markov;
+	private final long latestVoiceChannelId;
 
 	/**
 	 * Constructor.
@@ -48,9 +53,11 @@ public class EventListener
 	 *      the {@link RiMarkov}
 	 */
 	@Inject
-	public EventListener(IDiscordClient client, RiMarkov markov)
+	public EventListener(IDiscordClient client, RiMarkov markov,
+		@Named("latestVoiceChannelId") long latestVoiceChannelId)
 	{
 		super(client);
+		this.latestVoiceChannelId = latestVoiceChannelId;
 		this.random = new Random();
 		this.messageFile = new File("messages.txt");
 		this.markov = markov;
@@ -66,6 +73,15 @@ public class EventListener
 	public void onReady(ReadyEvent event)
 	{
 		logger.info("Logged in successfully.!");
+		if (latestVoiceChannelId > 0)
+		{
+			IVoiceChannel voiceChannel = client.getVoiceChannelByID(latestVoiceChannelId);
+			logger.info("Rejoining channel " + voiceChannel.getName());
+			if (voiceChannel != null)
+			{
+				voiceChannel.join();
+			}
+		}
 	}
 
 	/**
@@ -84,11 +100,19 @@ public class EventListener
 		Command command = Command.parseCommand(content);
 		if(command != null)
 		{
+
 			String argument = command.getArgument();
 			AudioPlayer player = AudioPlayer.getAudioPlayerForGuild(message.getGuild());
 			EventDispatcher dispatcher = client.getDispatcher();
 			KensaEvent kensaEvent = null;
-			switch(command.getAction())
+			Action action = command.getAction();
+
+			if (!action.hasPermission(message.getAuthor(), message.getGuild())){
+				sendMessage(textChannel, "You don't have permission do to that, you filthy fool!");
+				return;
+			}
+
+			switch(action)
 			{
 				/* Text channel commands */
 				case HELP:
@@ -156,6 +180,9 @@ public class EventListener
 					break;
 				case CLEAR:
 					kensaEvent = new ClearPlaylistEvent(textChannel, player);
+					break;
+				case RESTART:
+					kensaEvent = new RestartKensaEvent(textChannel);
 					break;
 			}
 

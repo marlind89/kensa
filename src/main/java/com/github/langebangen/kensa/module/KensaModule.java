@@ -3,6 +3,8 @@ package com.github.langebangen.kensa.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
+
 import rita.RiMarkov;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -17,15 +19,18 @@ public class KensaModule
 	extends AbstractModule
 {
 	private final String token;
+	private long voiceChannelId;
 
-	public KensaModule(String token)
+	public KensaModule(String token, long voiceChannelId)
 	{
 		this.token = token;
+		this.voiceChannelId = voiceChannelId;
 	}
 
 	@Override
 	protected void configure()
 	{
+		bindConstant().annotatedWith(Names.named("latestVoiceChannelId")).to(voiceChannelId);
 	}
 
 	@Provides
