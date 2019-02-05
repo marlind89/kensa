@@ -1,14 +1,21 @@
-package com.github.langebangen.kensa.audio;
+package com.github.langebangen.kensa.audio.lavaplayer;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.MessageBuilder;
 
+import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
+import com.neovisionaries.i18n.CountryCode;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
@@ -19,6 +26,11 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
+import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import com.wrapper.spotify.model_objects.specification.Paging;
+import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
+import com.wrapper.spotify.model_objects.specification.Track;
 
 /**
  * Implementation of {@link MusicPlayer} using the lava player library
@@ -26,29 +38,31 @@ import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
  * @author langen
  */
 public class LavaMusicPlayer
-    implements MusicPlayer
+	implements MusicPlayer
 {
-    private final TrackScheduler trackScheduler;
-    private final AudioPlayerManager playerManager;
+
+	private final TrackScheduler trackScheduler;
+	private final AudioPlayerManager playerManager;
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
+	private final SpotifyApi spotifyApi;
 
-    public LavaMusicPlayer(TrackScheduler trackScheduler,
-		AudioPlayerManager playerManager,
+	public LavaMusicPlayer(TrackScheduler trackScheduler, AudioPlayerManager playerManager,
 		YoutubeSearchProvider ytSearchProvider,
-		YoutubePlaylistSearchProvider ytPlaylistSearchProvider)
-    {
-        this.trackScheduler = trackScheduler;
-        this.playerManager = playerManager;
-        this.ytSearchProvider = ytSearchProvider;
-        this.ytPlaylistSearchProvider = ytPlaylistSearchProvider;
-    }
+		YoutubePlaylistSearchProvider ytPlaylistSearchProvider, SpotifyApi spotifyApi)
+	{
+		this.trackScheduler = trackScheduler;
+		this.playerManager = playerManager;
+		this.ytSearchProvider = ytSearchProvider;
+		this.ytPlaylistSearchProvider = ytPlaylistSearchProvider;
+		this.spotifyApi = spotifyApi;
+	}
 
-    @Override
-    public void stream(PlayAudioEvent event)
-    {
-        loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest());
-    }
+	@Override
+	public void stream(PlayAudioEvent event)
+	{
+		loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest());
+	}
 
 	@Override
 	public void searchYoutube(SearchYoutubeEvent event)
@@ -75,8 +89,7 @@ public class LavaMusicPlayer
 		}
 
 		MessageBuilder messageBuilder = new MessageBuilder(event.getClient())
-			.withChannel(event.getTextChannel())
-			.appendContent("```");
+			.withChannel(event.getTextChannel()).appendContent("```");
 
 		if(trackInfos.isEmpty())
 		{
@@ -90,9 +103,8 @@ public class LavaMusicPlayer
 				String title = trackInfo.title;
 				// The length will be -1 if its a playlist since the playlist
 				// length is not calculated
-				String duration = trackInfo.length != -1
-					? TrackUtils.getReadableDuration(trackInfo.length)
-					: "";
+				String duration =
+					trackInfo.length != -1 ? TrackUtils.getReadableDuration(trackInfo.length): "";
 				messageBuilder.appendContent(youtubeId);
 				messageBuilder.appendContent(" - " + title + " " + duration + "\n");
 			}
@@ -159,42 +171,41 @@ public class LavaMusicPlayer
 		trackScheduler.shuffle();
 	}
 
-    private void loadTrack(String songIdentity, IChannel channel, boolean isPlaylistRequest)
-    {
+	private void loadTrack(String songIdentity, IChannel channel, boolean isPlaylistRequest)
+	{
 		String playListIdentifier = null;
-    	if(isPlaylistRequest)
+		if(isPlaylistRequest)
 		{
-			List<AudioTrackInfo> playListIdentifiers = ytPlaylistSearchProvider.searchPlaylists(songIdentity);
-			playListIdentifier = playListIdentifiers.isEmpty()
-				? "ytsearch:" + songIdentity
-				: playListIdentifiers.get(0).identifier;
+			List<AudioTrackInfo> playListIdentifiers = ytPlaylistSearchProvider
+				.searchPlaylists(songIdentity);
+			playListIdentifier = playListIdentifiers.isEmpty() ?
+				"ytsearch:" + songIdentity:
+				playListIdentifiers.get(0).identifier;
 		}
 
-		final String identity = playListIdentifier != null
-			? playListIdentifier
-			: songIdentity;
+		final String identity = playListIdentifier != null ? playListIdentifier: songIdentity;
+
 		playerManager.loadItemOrdered(trackScheduler, identity, new AudioLoadResultHandler()
-        {
-        	private boolean fallbackSearchPerformed = false;
+		{
 
-            @Override
-            public void trackLoaded(AudioTrack track)
-            {
-                String readableTrack = TrackUtils.getReadableTrack(track);
+			private boolean fallbackSearchPerformed = false;
 
-                new MessageBuilder(channel.getClient())
-                    .withChannel(channel)
-                    .appendContent("Queued ")
-                    .appendContent(readableTrack, MessageBuilder.Styles.BOLD)
-                    .build();
+			@Override
+			public void trackLoaded(AudioTrack track)
+			{
+				String readableTrack = TrackUtils.getReadableTrack(track);
 
-                trackScheduler.queue(track);
-            }
+				new MessageBuilder(channel.getClient()).withChannel(channel)
+					.appendContent("Queued ")
+					.appendContent(readableTrack, MessageBuilder.Styles.BOLD).build();
 
-            @Override
-            public void playlistLoaded(AudioPlaylist playlist)
-            {
-            	if(fallbackSearchPerformed)
+				trackScheduler.queue(track);
+			}
+
+			@Override
+			public void playlistLoaded(AudioPlaylist playlist)
+			{
+				if(fallbackSearchPerformed)
 				{
 					// We will arrive here upon youtube search fallbacks,
 					// but we only want to queue the first match in this case
@@ -203,41 +214,37 @@ public class LavaMusicPlayer
 				}
 				else
 				{
-					new MessageBuilder(channel.getClient())
-						.withChannel(channel)
-						.appendContent("Queued " )
-						.appendContent(playlist.getName() + " [" + playlist.getTracks().size() + " songs]", MessageBuilder.Styles.BOLD)
-						.build();
+					new MessageBuilder(channel.getClient()).withChannel(channel)
+						.appendContent("Queued ").appendContent(
+						playlist.getName() + " [" + playlist.getTracks().size() + " songs]",
+						MessageBuilder.Styles.BOLD).build();
 
 					trackScheduler.queue(playlist);
 				}
-            }
+			}
 
-            @Override
-            public void noMatches()
-            {
-            	if(!fallbackSearchPerformed && !identity.startsWith("http"))
+			@Override
+			public void noMatches()
+			{
+				if(!fallbackSearchPerformed && !identity.startsWith("http"))
 				{
-					playerManager.loadItemOrdered(trackScheduler,"ytsearch:" + identity, this);
+					playerManager.loadItemOrdered(trackScheduler, "ytsearch:" + identity, this);
 					fallbackSearchPerformed = true;
 				}
 				else
 				{
-					new MessageBuilder(channel.getClient())
-						.withChannel(channel)
-						.appendContent("Nope couldn't find that..")
-						.build();
+					new MessageBuilder(channel.getClient()).withChannel(channel)
+						.appendContent("Nope couldn't find that..").build();
 				}
-            }
+			}
 
-            @Override
-            public void loadFailed(FriendlyException exception)
-            {
-                new MessageBuilder(channel.getClient())
-                    .withChannel(channel)
-                    .appendContent(exception.getMessage())
-                    .build();
-            }
-        });
-    }
+			@Override
+			public void loadFailed(FriendlyException exception)
+			{
+				new MessageBuilder(channel.getClient()).withChannel(channel)
+					.appendContent(exception.getMessage()).build();
+			}
+		});
+	}
+
 }

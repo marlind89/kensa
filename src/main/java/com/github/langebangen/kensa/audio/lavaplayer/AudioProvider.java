@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa.audio;
+package com.github.langebangen.kensa.audio.lavaplayer;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame;

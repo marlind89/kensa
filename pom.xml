@@ -106,6 +106,18 @@
             <artifactId>jsoup</artifactId>
             <version>1.10.3</version>
         </dependency>
+
+        <dependency>
+            <groupId>se.michaelthelin.spotify</groupId>
+            <artifactId>spotify-web-api-java</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.cfg4j</groupId>
+            <artifactId>cfg4j-core</artifactId>
+            <version>4.4.1</version>
+        </dependency>
     </dependencies>
 
     <build>

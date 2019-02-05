@@ -2,9 +2,9 @@ package com.github.langebangen.kensa.audio;
 
 import java.util.List;
 
-import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 
+import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;

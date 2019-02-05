@@ -1,5 +1,12 @@
 package com.github.langebangen.kensa;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+
 import com.github.langebangen.kensa.listener.EventListener;
 import com.github.langebangen.kensa.listener.RadioListener;
 import com.github.langebangen.kensa.listener.TextChannelListener;
@@ -7,6 +14,13 @@ import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import com.github.langebangen.kensa.module.KensaModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+
+import org.cfg4j.provider.ConfigurationProvider;
+import org.cfg4j.provider.ConfigurationProviderBuilder;
+import org.cfg4j.source.ConfigurationSource;
+import org.cfg4j.source.context.filesprovider.ConfigFilesProvider;
+import org.cfg4j.source.files.FilesConfigurationSource;
+import org.cfg4j.source.reload.strategy.PeriodicalReloadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.IDiscordClient;
@@ -51,12 +65,20 @@ public class KensaApp
 			}
 		}
 
-		Injector injector = Guice.createInjector(new KensaModule(args[0], voiceChannelId));
+		ConfigFilesProvider configFilesProvider = () -> Collections
+			.singletonList(Paths.get("config.yaml"));
 
+		ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
+		ConfigurationProvider provider = new ConfigurationProviderBuilder()
+			.withConfigurationSource(source)
+        	.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
+			.build();
+
+		Injector injector = Guice.createInjector(new KensaModule(
+			args[0], voiceChannelId, provider));
 		IDiscordClient dcClient = injector.getInstance(IDiscordClient.class);
 		registerListeners(dcClient, injector);
 		dcClient.login();
-
 
 		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());
 	}
