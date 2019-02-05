@@ -1,19 +1,13 @@
 package com.github.langebangen.kensa;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import com.github.langebangen.kensa.listener.EventListener;
-import com.github.langebangen.kensa.listener.RadioListener;
-import com.github.langebangen.kensa.listener.TextChannelListener;
-import com.github.langebangen.kensa.listener.VoiceChannelListener;
-import com.github.langebangen.kensa.module.KensaModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.events.EventDispatcher;
+import sx.blah.discord.api.internal.Opus;
+import sx.blah.discord.util.DiscordException;
 
 import org.cfg4j.provider.ConfigurationProvider;
 import org.cfg4j.provider.ConfigurationProviderBuilder;
@@ -23,11 +17,14 @@ import org.cfg4j.source.files.FilesConfigurationSource;
 import org.cfg4j.source.reload.strategy.PeriodicalReloadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
-import sx.blah.discord.api.internal.Opus;
-import sx.blah.discord.handle.obj.IVoiceChannel;
-import sx.blah.discord.util.DiscordException;
+
+import com.github.langebangen.kensa.listener.EventListener;
+import com.github.langebangen.kensa.listener.RadioListener;
+import com.github.langebangen.kensa.listener.TextChannelListener;
+import com.github.langebangen.kensa.listener.VoiceChannelListener;
+import com.github.langebangen.kensa.module.KensaModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
 /**
  * Main class for Kensa.

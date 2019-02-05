@@ -1,7 +1,6 @@
 package com.github.langebangen.kensa.command;
 
 import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
 
 import com.github.langebangen.kensa.role.KensaRole;
@@ -17,9 +16,10 @@ public enum Action
 	JOIN     ("join", "Joins the specified voice channel."),
 	LEAVE    ("leave", "Leaves the current channel Kensa is in."),
 	PLAY     ("play", "Queues the specified song in the playlist from the specified URL. This play function supports streaming from several sites such"
-		+ " as youtube, twitch, soundcloud, bandcamp, vimeo and direct links to tracks. If the identity provided wasn't found on any of the"
-		+ " supported sites, a youtube search is performed and the first match is queued. Add '-p' before the identity to search and queue the"
-		+ " first playlist match from youtube. If no playlist was found, kensa will perform a normal youtube search and compile a playlist of the matches."),
+		+ " as youtube, twitch, soundcloud, bandcamp, vimeo and direct links to tracks. You can also queue spotify playlists by providing the spotify URI to the playlist."
+		+ " If the identity provided wasn't found on any of the supported sites, a youtube search is performed and the first match is queued. Add '-p' before the"
+		+ " identity to search and queue the first playlist match from youtube. If no playlist was found, kensa will perform a normal youtube search and compile"
+		+ " a playlist of the matches."),
 	SKIP     ("skip", "Skips the current song and additional future songs if a number is provided."),
 	SONG     ("song", "Shows the current track."),
 	LOOP     ("loop", "Enables/disables looping of the playlist. 'on' to enable looping and 'off' to disable it. Disabled by default."),
