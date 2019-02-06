@@ -46,16 +46,10 @@ public class KensaApp
 	public static void main(String[] args)
 		throws DiscordException
 	{
-		if(args.length < 1)
-		{
-			System.out.println("The bot token must be provided in main args.");
-			System.exit(0);
-		}
-
 		long voiceChannelId = 0;
-		if (args.length > 1)
+		if (args.length > 0)
 		{
-			String voiceChannelToConnectTo = args[1];
+			String voiceChannelToConnectTo = args[0];
 			if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
 			{
 				voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
@@ -63,7 +57,7 @@ public class KensaApp
 		}
 
 		ConfigFilesProvider configFilesProvider = () -> Collections
-			.singletonList(Paths.get("config.yaml"));
+			.singletonList(Paths.get(System.getProperty("user.dir"), "config.yaml"));
 
 		ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
 		ConfigurationProvider provider = new ConfigurationProviderBuilder()
@@ -71,8 +65,7 @@ public class KensaApp
         	.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
 			.build();
 
-		Injector injector = Guice.createInjector(new KensaModule(
-			args[0], voiceChannelId, provider));
+		Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
 		IDiscordClient dcClient = injector.getInstance(IDiscordClient.class);
 		registerListeners(dcClient, injector);
 		dcClient.login();

@@ -6,3 +6,6 @@ database:
 spotify:
   clientId: clientId
   clientSecret: clientSecret
+
+discord:
+  token: token
