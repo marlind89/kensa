@@ -1,0 +1,11 @@
+database:
+  username: postgres
+  password: password
+  url: jdbc:postgresql://localhost:5432/kensa
+
+spotify:
+  clientId: clientId
+  clientSecret: clientSecret
+
+discord:
+  token: token

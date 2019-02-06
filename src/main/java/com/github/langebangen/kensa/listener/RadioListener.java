@@ -4,7 +4,6 @@ import java.util.List;
 
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.api.internal.json.requests.EmojiCreateRequest;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IChannel;
@@ -17,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
-import com.github.langebangen.kensa.audio.MusicPlayerManager;
+import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.ClearPlaylistEvent;
 import com.github.langebangen.kensa.listener.event.CurrentTrackRequestEvent;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
@@ -31,8 +30,6 @@ import com.github.langebangen.kensa.listener.event.SkipTrackEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.google.inject.Inject;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.vdurmont.emoji.Emoji;
-import com.vdurmont.emoji.EmojiManager;
 
 /**
  * @author Martin.

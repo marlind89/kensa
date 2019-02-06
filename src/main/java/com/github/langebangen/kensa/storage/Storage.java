@@ -1,5 +1,6 @@
 package com.github.langebangen.kensa.storage;
 
+import com.github.langebangen.kensa.config.DatabaseConfig;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -21,14 +22,11 @@ public class Storage
 	private final String password;
 
 	@Inject
-	public Storage()
-		throws IOException
+	public Storage(DatabaseConfig dbConfig)
 	{
-		Properties properties = new Properties();
-		properties.load(new FileInputStream("database.conf"));
-		username = properties.getProperty("username");
-		password = properties.getProperty("password");
-		url = properties.getProperty("url");
+		username = dbConfig.username();
+		password = dbConfig.password();
+		url = dbConfig.url();
 	}
 
 	public Connection getConnection()

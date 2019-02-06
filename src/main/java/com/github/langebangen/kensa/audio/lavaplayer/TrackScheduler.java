@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa.audio;
+package com.github.langebangen.kensa.audio.lavaplayer;
 
 import java.util.ArrayList;
 import java.util.Collections;

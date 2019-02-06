@@ -1,4 +1,4 @@
-package com.github.langebangen.kensa.audio;
+package com.github.langebangen.kensa.audio.lavaplayer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,24 +8,18 @@ import sx.blah.discord.handle.obj.ActivityType;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.StatusType;
 
+import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
-import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import com.wrapper.spotify.SpotifyApi;
 
 /**
  * Factory for creating {@link MusicPlayer}s
@@ -40,24 +34,19 @@ public class MusicPlayerManager
 	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final IDiscordClient client;
+	private final SpotifyApi spotifyApi;
 
 	@Inject
-	private MusicPlayerManager(IDiscordClient client)
+	private MusicPlayerManager(IDiscordClient client, SpotifyApi spotifyApi,
+		AudioPlayerManager playerManager)
 	{
 		this.client = client;
+		this.spotifyApi = spotifyApi;
 		this.musicPlayers = new HashMap<>();
-		this.playerManager = new DefaultAudioPlayerManager();
+		this.playerManager = playerManager;
 		YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(true);
 		ytSearchProvider = new YoutubeSearchProvider(ytSourceManager);
 		ytPlaylistSearchProvider = new YoutubePlaylistSearchProvider(ytSourceManager);
-		playerManager.registerSourceManager(ytSourceManager);
-		playerManager.registerSourceManager(new SoundCloudAudioSourceManager());
-		playerManager.registerSourceManager(new BandcampAudioSourceManager());
-		playerManager.registerSourceManager(new VimeoAudioSourceManager());
-		playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
-		playerManager.registerSourceManager(new BeamAudioSourceManager());
-		playerManager.registerSourceManager(new HttpAudioSourceManager());
-		AudioSourceManagers.registerLocalSource(playerManager);
 	}
 
 	/**
@@ -96,7 +85,8 @@ public class MusicPlayerManager
 			audioPlayer.setVolume(50);
 			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
 			audioPlayer.addListener(scheduler);
-			musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider, ytPlaylistSearchProvider);
+			musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider,
+				ytPlaylistSearchProvider, spotifyApi);
 			guild.getAudioManager().setAudioProvider(new AudioProvider(audioPlayer));
 			musicPlayers.put(guildId, musicPlayer);
 		}
