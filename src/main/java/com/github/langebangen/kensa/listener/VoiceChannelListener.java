@@ -1,10 +1,7 @@
 package com.github.langebangen.kensa.listener;
 
-import com.github.langebangen.kensa.babylon.Babylon;
-import com.github.langebangen.kensa.listener.event.BabylonEvent;
-import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
-import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
-import com.google.inject.Inject;
+import java.util.List;
+
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.obj.IChannel;
@@ -12,7 +9,9 @@ import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.util.MissingPermissionsException;
 
-import java.util.List;
+import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
+import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
+import com.google.inject.Inject;
 
 /**
  * @author Martin.
