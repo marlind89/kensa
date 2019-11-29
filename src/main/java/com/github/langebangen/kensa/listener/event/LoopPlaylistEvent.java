@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
@@ -9,9 +9,9 @@ import sx.blah.discord.util.audio.AudioPlayer;
 public class LoopPlaylistEvent extends KensaRadioEvent
 {
 	private final String loopEnabled;
-	public LoopPlaylistEvent(IChannel textChannel, AudioPlayer player, String loopEnabled)
+	public LoopPlaylistEvent(DiscordClient client, TextChannel textChannel, String loopEnabled)
 	{
-		super(textChannel, player);
+		super(client, textChannel);
 		this.loopEnabled = loopEnabled;
 	}
 

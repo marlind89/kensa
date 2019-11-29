@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
@@ -10,9 +10,9 @@ public class SkipTrackEvent extends KensaRadioEvent
 {
 	private final String skipAmount;
 
-	public SkipTrackEvent(IChannel textChannel, AudioPlayer player, String skipAmount)
+	public SkipTrackEvent(DiscordClient client, TextChannel textChannel, String skipAmount)
 	{
-		super(textChannel, player);
+		super(client, textChannel);
 		this.skipAmount = skipAmount;
 	}
 

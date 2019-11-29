@@ -10,12 +10,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import discord4j.core.DiscordClient;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.VoiceChannel;
+import reactor.core.publisher.Mono;
 import rita.RiMarkov;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.guild.channel.message.MentionEvent;
-import sx.blah.discord.handle.obj.IVoiceChannel;
-import sx.blah.discord.util.MessageBuilder;
 
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -24,6 +23,7 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.listener.event.BabylonEvent;
@@ -50,143 +50,177 @@ public class TextChannelListener
 	private final RiMarkov markov;
 	private final Babylon babylon;
 	private final Storage storage;
+	private final VoiceConnections voiceConnections;
 
 	private int lastInsultId;
 
 	@Inject
-	public TextChannelListener(IDiscordClient client,
-		RiMarkov markov, Babylon babylon, Storage storage)
+	public TextChannelListener(DiscordClient client,
+		RiMarkov markov, Babylon babylon, Storage storage,
+		VoiceConnections voiceConnections)
 	{
 		super(client);
 
 		this.markov = markov;
 		this.babylon = babylon;
 		this.storage = storage;
+		this.voiceConnections = voiceConnections;
 		this.lastInsultId = -1;
+
+		onHelpEvent();
+		onBabylonEvent();
+		onMentionEvent();
+		onInsultEvent();
+		onInsultPersistEvent();
+		onRestartKensaEvent();
 	}
 
-	@EventSubscriber
-	public void onHelpEvent(HelpEvent event)
+	private void onHelpEvent()
 	{
-		MessageBuilder messageBuilder = new MessageBuilder(client)
-				.withChannel(event.getTextChannel());
+		dispatcher.on(HelpEvent.class)
+			.flatMap(event -> event.getTextChannel().createEmbed(spec -> {
+				spec.setAuthor("Kensa v" + KensaConstants.VERSION, "https://github.com/langebangen/kensa", null);
+				spec.setTitle("Available commands:");
 
-		messageBuilder.appendContent("Kensa v" + KensaConstants.VERSION, MessageBuilder.Styles.ITALICS);
-		messageBuilder.appendContent("\n");
-		for(Action action : Action.values())
-		{
-			messageBuilder.appendContent("\n" + action.getAction(), MessageBuilder.Styles.BOLD);
-			messageBuilder.appendContent(" - " + action.getDescription());
-		}
-		sendMessage(messageBuilder);
-	}
-
-	@EventSubscriber
-	public void onBabylonEvent(BabylonEvent event)
-	{
-		sendMessage(event.getTextChannel(), "```" + babylon.getRandomDish() + "```");
-	}
-
-	@EventSubscriber
-	public void onMentionEvent(MentionEvent event)
-	{
-		sendMessage(event.getMessage().getChannel(), markov.generateSentence());
-	}
-
-	@EventSubscriber
-	public void onInsultEvent(InsultEvent event)
-	{
-		try(Connection conn = storage.getConnection())
-		{
-			DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
-			try(Stream<Record> stream = create.select()
-					.from(INSULT)
-					.orderBy(DSL.rand())
-					.stream())
-			{
-				Optional<Record> first = stream.findFirst();
-				if(first.isPresent())
+				for(Action action : Action.values())
 				{
-					Record record = first.get();
-					String text = record.getValue(INSULT.TEXT);
-					sendMessage(event.getTextChannel(), event.getUser().mention() + ", " + text);
-					lastInsultId = record.getValue(INSULT.ID);
+					spec.addField(action.getAction(), action.getDescription(), false);
 				}
-			}
-		}
-		catch(SQLException e)
-		{
-			logger.error("Error when fetching insult from storage.", e);
-		}
+			}))
+			.subscribe();
 	}
 
-	@EventSubscriber
-	public void onInsultPersistEvent(InsultPersistEvent event)
-	{
-		if(!event.isAdded() && lastInsultId == -1)
-		{
-			sendMessage(event.getTextChannel(), "No previous insult to remove!");
-		}
 
-		try(Connection conn = storage.getConnection())
-		{
-			DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
-			if(event.isAdded())
-			{
-				String insult = event.getInsult();
-				if(insult != null && !insult.isEmpty())
+	private void onBabylonEvent()
+	{
+		dispatcher.on(BabylonEvent.class)
+			.flatMap(event -> event.getTextChannel()
+				.createMessage("```" + babylon.getRandomDish() + "```"))
+			.subscribe();
+	}
+
+	private void onMentionEvent()
+	{
+		dispatcher.on(MessageCreateEvent.class)
+			.flatMap(event -> event.getGuild()
+				.map(guild -> guild.getClient().getSelfId())
+				.filter(Optional::isPresent)
+				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId.get()))
+				.flatMap(botId -> event.getMessage().getChannel())
+				.flatMap(channel -> channel.createMessage(markov.generateSentence()))
+			)
+			.subscribe(null, e -> logger.error("Failed on mention event", e));
+	}
+
+	private void onInsultEvent()
+	{
+		dispatcher.on(InsultEvent.class)
+			.flatMap(event -> {
+				try(Connection conn = storage.getConnection())
+					{
+					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
+					try(Stream<Record> stream = create.select()
+						.from(INSULT)
+						.orderBy(DSL.rand())
+						.stream())
+					{
+						Optional<Record> first = stream.findFirst();
+						if(first.isPresent())
+						{
+							Record record = first.get();
+							String text = record.getValue(INSULT.TEXT);
+							lastInsultId = record.getValue(INSULT.ID);
+
+							return event.getTextChannel().createMessage(
+								event.getUser().getMention() + ", " + text);
+						}
+					}
+				}
+				catch(SQLException e)
 				{
-					InsultRecord insultRecord = create.newRecord(INSULT);
-					insultRecord.setText(event.getInsult());
-					insultRecord.store();
-					sendMessage(event.getTextChannel(), "Insult added.");
+					logger.error("Error when fetching insult from storage.", e);
 				}
-			}
-			else
-			{
-				create.delete(INSULT)
-					.where(INSULT.ID.equal(lastInsultId))
-					.execute();
-				sendMessage(event.getTextChannel(), "Removed previous insult.");
-				lastInsultId = -1;
-			}
-		}
-		catch(SQLException e)
-		{
-			logger.error("Error when persisting insult.", e);
-		}
+				return Mono.empty();
+			})
+			.subscribe();
 	}
 
-	@EventSubscriber
-	public void onRestartKensaEvent(RestartKensaEvent event)
+
+	private void onInsultPersistEvent()
 	{
-		sendMessage(event.getTextChannel(), "Restarting...");
+		dispatcher.on(InsultPersistEvent.class)
+			.flatMap(event -> {
+				if(!event.isAdded() && lastInsultId == -1)
+				{
+					return event.getTextChannel()
+						.createMessage("No previous insult to remove!");
+				}
 
-		String voiceChannelId = "";
-		IVoiceChannel connectedVoiceChannel = event.getTextChannel()
-			.getGuild().getConnectedVoiceChannel();
-		if (connectedVoiceChannel != null)
-		{
-			voiceChannelId = " " + connectedVoiceChannel.getLongID();
-		}
+				try(Connection conn = storage.getConnection())
+				{
+					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
+					if(event.isAdded())
+					{
+						String insult = event.getInsult();
+						if(insult != null && !insult.isEmpty())
+						{
+							InsultRecord insultRecord = create.newRecord(INSULT);
+							insultRecord.setText(event.getInsult());
+							insultRecord.store();
+							return event.getTextChannel().createMessage("Insult added.");
+						}
+					}
+					else
+					{
+						create.delete(INSULT)
+							.where(INSULT.ID.equal(lastInsultId))
+							.execute();
+						lastInsultId = -1;
+						return event.getTextChannel().createMessage("Removed previous insult.");
+					}
+				}
+				catch(SQLException e)
+				{
+					logger.error("Error when persisting insult.", e);
+				}
+				return Mono.empty();
+			})
+			.subscribe();
+	}
 
-		event.getTextChannel().getGuild().getConnectedVoiceChannel().getLongID();
-		List<String> command = new ArrayList<>();
-		command.add("/bin/bash");
-		command.add("-c");
-		command.add("sleep 5 && ~/kensa/kensa.sh" + voiceChannelId);
-		ProcessBuilder builder = new ProcessBuilder(command);
 
-		try
-		{
-			builder.start();
-			System.exit(0);
-		}
-		catch(IOException e)
-		{
-			String message = "Failed to restart Kensa!";
-			logger.error(message , e);
-			sendMessage(event.getTextChannel(), message);
-		}
+	public void onRestartKensaEvent()
+	{
+		dispatcher.on(RestartKensaEvent.class)
+			.doOnNext(event -> {
+				event.getTextChannel().createMessage("Restarting...").subscribe();
+
+				String voiceChannelId = "";
+				VoiceChannel voiceChannel = voiceConnections.getVoiceChannel(
+					event.getTextChannel().getGuildId());
+				if (voiceChannel != null)
+				{
+					voiceChannelId = " " + voiceChannel.getId().asLong();
+				}
+
+				List<String> command = new ArrayList<>();
+				command.add("/bin/bash");
+				command.add("-c");
+				command.add("sleep 5 && ~/kensa/kensa.sh" + voiceChannelId);
+				ProcessBuilder builder = new ProcessBuilder(command);
+
+				try
+				{
+					builder.start();
+					System.exit(0);
+				}
+				catch(IOException e)
+				{
+					String message = "Failed to restart Kensa!";
+					logger.error(message , e);
+					event.getTextChannel().createMessage(message).subscribe();
+				}
+			})
+			.subscribe();
 	}
 }

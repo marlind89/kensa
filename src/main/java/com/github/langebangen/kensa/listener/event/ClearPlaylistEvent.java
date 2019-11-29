@@ -1,15 +1,15 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class ClearPlaylistEvent extends KensaRadioEvent
 {
-	public ClearPlaylistEvent(IChannel channel, AudioPlayer player)
+	public ClearPlaylistEvent(DiscordClient client, TextChannel channel)
 	{
-		super(channel, player);
+		super(client, channel);
 	}
 }

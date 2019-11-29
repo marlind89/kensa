@@ -4,10 +4,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventDispatcher;
-import sx.blah.discord.api.internal.Opus;
-import sx.blah.discord.util.DiscordException;
+import discord4j.core.DiscordClient;
+import reactor.core.publisher.Hooks;
 
 import org.cfg4j.provider.ConfigurationProvider;
 import org.cfg4j.provider.ConfigurationProviderBuilder;
@@ -40,11 +38,8 @@ public class KensaApp
 	 *
 	 * @param args
 	 *      the arguments, should contain the bot token.
-	 *
-	 * @throws DiscordException
 	 */
 	public static void main(String[] args)
-		throws DiscordException
 	{
 		long voiceChannelId = 0;
 		if (args.length > 0)
@@ -65,20 +60,26 @@ public class KensaApp
         	.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
 			.build();
 
-		Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
-		IDiscordClient dcClient = injector.getInstance(IDiscordClient.class);
-		registerListeners(dcClient, injector);
-		dcClient.login();
+		Hooks.onOperatorDebug();
 
-		logger.info("Opus version:" + Opus.INSTANCE.opus_get_version_string());
+		Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
+		DiscordClient dcClient = injector.getInstance(DiscordClient.class);
+		try
+		{
+			registerListeners(injector);
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+
+		dcClient.login().block();
 	}
 
-	private static void registerListeners(IDiscordClient dcClient, Injector injector)
+	private static void registerListeners(Injector injector)
 	{
-		EventDispatcher dispatcher = dcClient.getDispatcher();
-		dispatcher.registerListener(injector.getInstance(EventListener.class));
-		dispatcher.registerListener(injector.getInstance(RadioListener.class));
-		dispatcher.registerListener(injector.getInstance(TextChannelListener.class));
-		dispatcher.registerListener(injector.getInstance(VoiceChannelListener.class));
+		injector.getInstance(RadioListener.class);
+		injector.getInstance(EventListener.class);
+		injector.getInstance(TextChannelListener.class);
+		injector.getInstance(VoiceChannelListener.class);
 	}
 }

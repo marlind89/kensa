@@ -1,20 +1,15 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class CurrentTrackRequestEvent extends KensaRadioEvent
 {
-	public CurrentTrackRequestEvent(IChannel textChannel, AudioPlayer player)
+	public CurrentTrackRequestEvent(DiscordClient client, TextChannel textChannel)
 	{
-		super(textChannel, player);
-	}
-
-	public AudioPlayer.Track getCurrentTrack()
-	{
-		return getPlayer().getCurrentTrack();
+		super(client, textChannel);
 	}
 }

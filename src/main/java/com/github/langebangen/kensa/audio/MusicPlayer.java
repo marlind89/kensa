@@ -2,7 +2,7 @@ package com.github.langebangen.kensa.audio;
 
 import java.util.List;
 
-import sx.blah.discord.handle.obj.IGuild;
+import discord4j.core.object.entity.Guild;
 
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
@@ -13,7 +13,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
  * Main interface for interacting with the music player.
  * This {@link MusicPlayer} may be created with the {@link MusicPlayerManager}
  *
- * Every {@link IGuild} has its own {@link MusicPlayer} which will be located
+ * Every {@link Guild} has its own {@link MusicPlayer} which will be located
  * inside the {@link MusicPlayerManager}
  *
  * @author langen

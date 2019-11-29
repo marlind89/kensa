@@ -1,21 +1,23 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.api.events.Event;
-import sx.blah.discord.handle.obj.IChannel;
+import discord4j.core.DiscordClient;
+import discord4j.core.event.domain.Event;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class KensaEvent extends Event
 {
-	private final IChannel textChannel;
+	private final TextChannel textChannel;
 
-	public KensaEvent(IChannel textChannel)
+	public KensaEvent(DiscordClient client, TextChannel textChannel)
 	{
+		super(client);
 		this.textChannel = textChannel;
 	}
 
-	public IChannel getTextChannel()
+	public TextChannel getTextChannel()
 	{
 		return textChannel;
 	}

@@ -1,24 +1,24 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.api.events.Event;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IUser;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class InsultEvent extends KensaEvent
 {
-	private final IUser user;
+	private final Member member;
 
-	public InsultEvent(IChannel textChannel, IUser user)
+	public InsultEvent(DiscordClient client, TextChannel textChannel, Member member)
 	{
-		super(textChannel);
-		this.user = user;
+		super(client, textChannel);
+		this.member = member;
 	}
 
-	public IUser getUser()
+	public Member getUser()
 	{
-		return user;
+		return member;
 	}
 }

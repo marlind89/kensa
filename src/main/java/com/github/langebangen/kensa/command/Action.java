@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.command;
 
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IUser;
+import discord4j.core.object.entity.Member;
+import reactor.core.publisher.Mono;
 
 import com.github.langebangen.kensa.role.KensaRole;
 
@@ -92,11 +92,10 @@ public enum Action
 		return null;
 	}
 
-	public boolean hasPermission(IUser user, IGuild guild)
+	public Mono<Boolean> hasPermission(Member member)
 	{
-		return requiresRole == null ||
-			user.getRolesForGuild(guild)
-				.stream()
-				.anyMatch(x -> x.getName().equals(requiresRole.GetRoleName()));
+		return requiresRole == null
+			? Mono.just(true)
+			: member.getRoles().any(role -> role.getName().equals(requiresRole.GetRoleName()));
 	}
 }

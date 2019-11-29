@@ -2,11 +2,12 @@ package com.github.langebangen.kensa.audio.lavaplayer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.handle.obj.ActivityType;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.StatusType;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.presence.Activity;
+import discord4j.core.object.presence.Presence;
+import discord4j.core.object.util.Snowflake;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
@@ -29,15 +30,15 @@ import com.wrapper.spotify.SpotifyApi;
 @Singleton
 public class MusicPlayerManager
 {
-	public final Map<Long, MusicPlayer> musicPlayers;
+	public final Map<Snowflake, MusicPlayer> musicPlayers;
 	private final AudioPlayerManager playerManager;
 	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
 	private final YoutubeSearchProvider ytSearchProvider;
-	private final IDiscordClient client;
+	private final DiscordClient client;
 	private final SpotifyApi spotifyApi;
 
 	@Inject
-	private MusicPlayerManager(IDiscordClient client, SpotifyApi spotifyApi,
+	private MusicPlayerManager(DiscordClient client, SpotifyApi spotifyApi,
 		AudioPlayerManager playerManager)
 	{
 		this.client = client;
@@ -59,40 +60,34 @@ public class MusicPlayerManager
 	 * @return
 	 * 		the {@link MusicPlayer}
 	 */
-	public MusicPlayer getMusicPlayer(KensaEvent event)
+	public Optional<MusicPlayer> getMusicPlayer(KensaEvent event)
 	{
-		return getMusicPlayer(event.getTextChannel().getGuild());
+		return getMusicPlayer(event.getTextChannel().getGuildId());
+	}
+
+	public void putMusicPlayer(Snowflake guildId, AudioPlayer audioPlayer){
+		audioPlayer.setVolume(50);
+		TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
+		audioPlayer.addListener(scheduler);
+
+		musicPlayers.put(guildId, new LavaMusicPlayer(scheduler,
+			playerManager, ytSearchProvider, ytPlaylistSearchProvider, spotifyApi));
 	}
 
 	/**
-	 * Gets the {@link MusicPlayer} associated with the specified {@link IGuild}.
+	 * Gets the {@link MusicPlayer} associated with the specified guild id.
 	 * If no such {@link MusicPlayer} exists then it is created and the returned.
 	 *
-	 * @param guild
-	 * 		the {@link IGuild}
+	 * @param guildId
+	 * 		the guild id
 	 *
 	 * @return
 	 * 		the {@link MusicPlayer}
 	 */
-	public MusicPlayer getMusicPlayer(IGuild guild)
+	public Optional<MusicPlayer> getMusicPlayer(Snowflake guildId)
 	{
-		long guildId = Long.parseLong(guild.getStringID());
-
-		MusicPlayer musicPlayer = musicPlayers.get(guildId);
-		if(musicPlayer == null)
-		{
-			AudioPlayer audioPlayer = playerManager.createPlayer();
-			audioPlayer.setVolume(50);
-			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
-			audioPlayer.addListener(scheduler);
-			musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider,
-				ytPlaylistSearchProvider, spotifyApi);
-			guild.getAudioManager().setAudioProvider(new AudioProvider(audioPlayer));
-			musicPlayers.put(guildId, musicPlayer);
-		}
-
-		return musicPlayer;
-	};
+		return Optional.ofNullable(musicPlayers.get(guildId));
+	}
 
 	/**
 	 * A {@link TrackScheduler} which updates the "Now playing"
@@ -121,7 +116,9 @@ public class MusicPlayerManager
 		public void onTrackStart(AudioPlayer player, AudioTrack track)
 		{
 			super.onTrackStart(player, track);
-			client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, TrackUtils.getReadableTrack(track));
+
+			client.updatePresence(Presence.online(Activity.playing(TrackUtils.getReadableTrack(track))))
+				.subscribe();
 		}
 
 		@Override
@@ -129,7 +126,8 @@ public class MusicPlayerManager
 		{
 			if(!hasNextTrack())
 			{
-				client.changePresence(StatusType.ONLINE);
+				client.updatePresence(Presence.online())
+					.subscribe();
 			}
 			super.onTrackEnd(player, track, endReason);
 		}

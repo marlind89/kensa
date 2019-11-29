@@ -1,16 +1,17 @@
 package com.github.langebangen.kensa.listener;
 
 import java.util.List;
+import java.util.Optional;
 
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
-import sx.blah.discord.handle.impl.obj.ReactionEmoji;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IMessage;
-import sx.blah.discord.util.MessageBuilder;
-import sx.blah.discord.util.RequestBuilder;
+import discord4j.core.DiscordClient;
+import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.event.domain.message.ReactionRemoveEvent;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.core.object.util.Snowflake;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,184 +45,241 @@ public class RadioListener
 	private static final String NEXT_TRACK_EMOJI = "\u23ed";
 
 	@Inject
-	public RadioListener(IDiscordClient client, MusicPlayerManager playerFactory)
+	public RadioListener(DiscordClient client, MusicPlayerManager playerFactory)
 	{
 		super(client);
 		this.playerFactory = playerFactory;
+
+		handlePlayAudioEvent();
+		handleSearchYoutubeEvent();
+		handleSkipTrackEvent();
+		handleCurrentTrackRequestEvent();
+		handleLoopPlaylistEvent();
+		handleShuffleEvent();
+		handleShowPlaylistEvent();
+		handleClearPlaylistEvent();
+		handlePauseEvent();
+		handleReactionEvent();
 	}
 
-	@EventSubscriber
-	public void handlePlayAudioEvent(PlayAudioEvent event)
+	private void handlePlayAudioEvent()
 	{
-		getPlayer(event).stream(event);
+		dispatcher.on(PlayAudioEvent.class)
+			.subscribe(event -> getPlayer(event).ifPresent(player -> player.stream(event)));
 	}
 
-	@EventSubscriber
-	public void handleSearchYoutubeEvent(SearchYoutubeEvent event)
+	private void handleSearchYoutubeEvent()
 	{
-		getPlayer(event).searchYoutube(event);
+		dispatcher.on(SearchYoutubeEvent.class)
+			.subscribe(event -> getPlayer(event).ifPresent(player -> player.searchYoutube(event)));
 	}
 
-	@EventSubscriber
-	public void handleSkipTrackEvent(SkipTrackEvent event)
+	private void handleSkipTrackEvent()
 	{
-		String skipAmountString = event.getSkipAmount();
-		MusicPlayer musicPlayer = getPlayer(event);
-		if(skipAmountString == null)
-		{
-			//Skip current song
-			musicPlayer.skipTrack();
-		}
-		else if(!isInteger(skipAmountString))
-		{
-			sendMessage(event.getTextChannel(), "That's not a valid number!");
-		}
-		else
-		{
-			int skipAmount = Integer.parseInt(skipAmountString);
-			musicPlayer.skipTrack(skipAmount);
-		}
+		dispatcher.on(SkipTrackEvent.class)
+			.subscribe(event -> {
+				String skipAmountString = event.getSkipAmount();
+				getPlayer(event).ifPresent(player -> {
+					if(skipAmountString == null)
+					{
+						//Skip current song
+						player.skipTrack();
+					}
+					else if(!isInteger(skipAmountString))
+					{
+						event.getTextChannel().createMessage("That's not a valid number!")
+							.subscribe();
+					}
+					else
+					{
+						int skipAmount = Integer.parseInt(skipAmountString);
+						player.skipTrack(skipAmount);
+					}
+				});
+			});
+
 	}
 
-	@EventSubscriber
-	public void handleCurrentTrackRequestEvent(CurrentTrackRequestEvent event)
+	private void handleCurrentTrackRequestEvent()
 	{
-		AudioTrack currentSong = getPlayer(event).getCurrentTrack();
-		sendMessage(new MessageBuilder(client)
-			.withChannel(event.getTextChannel())
-			.appendContent("Current song: ")
-			.appendContent(currentSong != null
-				? TrackUtils.getReadableTrack(currentSong)
-				: "none", MessageBuilder.Styles.BOLD));
+		dispatcher.on(CurrentTrackRequestEvent.class)
+			.flatMap(event -> {
+				Optional<MusicPlayer> playerOpts = getPlayer(event);
+				if (!playerOpts.isPresent()){
+					return Mono.empty();
+				}
+
+				AudioTrack currentSong = playerOpts.get().getCurrentTrack();
+
+				return event.getTextChannel().createEmbed(spec -> {
+					spec.setTitle("Current song: ");
+					spec.setDescription("**" + (currentSong != null
+						? TrackUtils.getReadableTrack(currentSong)
+						: "none") + "**");
+				});
+			})
+			.subscribe();
 	}
 
-	@EventSubscriber
-	public void handleLoopPlaylistEvent(LoopPlaylistEvent event)
+	private void handleLoopPlaylistEvent()
 	{
-		IChannel channel = event.getTextChannel();
-		IGuild guild = channel.getGuild();
-		String loopEnabled = event.getLoopEnabled() == null
-				? ""
-				: event.getLoopEnabled();
-		MusicPlayer musicPlayer = getPlayer(event);
-		switch(loopEnabled)
-		{
-			case "on":
-				musicPlayer.setLoopEnabled(true);
-				sendMessage(channel, "Looping enabled.");
-				break;
-			case "off":
-				musicPlayer.setLoopEnabled(false);
-				sendMessage(channel, "Looping disabled.");
-				break;
-			default:
-				sendMessage(channel, "Invalid loop command. Specify on or off, e.g. \"!loop on\"");
-		}
+		dispatcher.on(LoopPlaylistEvent.class)
+			.flatMap(event -> {
+				TextChannel channel = event.getTextChannel();
+
+				String loopEnabled = event.getLoopEnabled() == null
+					? ""
+					: event.getLoopEnabled();
+
+				return getPlayer(event).map(player -> {
+					switch(loopEnabled)
+					{
+						case "on":
+							player.setLoopEnabled(true);
+							return channel.createMessage("Looping enabled.");
+						case "off":
+							player.setLoopEnabled(false);
+							return channel.createMessage("Looping disabled.");
+						default:
+							return channel.createMessage("Invalid loop command. Specify on or off, e.g. \"!loop on\"");
+					}
+				}).orElse(Mono.empty());
+			})
+			.subscribe();
+
 	}
 
-	@EventSubscriber
-	public void handleShuffleEvent(ShufflePlaylistEvent event)
+	private void handleShuffleEvent()
 	{
-		getPlayer(event).shuffle();
-		sendMessage(event.getTextChannel(), "Playlist shuffled!");
+		dispatcher.on(ShufflePlaylistEvent.class)
+			.flatMap(event -> getPlayer(event)
+				.map(player -> {
+					player.shuffle();
+
+					return event.getTextChannel().createMessage("Playlist shuffled!");
+				})
+				.orElse(Mono.empty())
+			).subscribe();
+
 	}
 
-	@EventSubscriber
-	public void handleShowPlaylistEvent(ShowPlaylistEvent event)
+	private void handleShowPlaylistEvent()
 	{
-		List<AudioTrack> playlist = getPlayer(event).getPlayList();
-		if(playlist.isEmpty())
-		{
-			sendMessage(event.getTextChannel(), "No songs added to the playlist.");
-		}
-		else
-		{
-			MessageBuilder messageBuilder = new MessageBuilder(client)
-					.withChannel(event.getTextChannel())
-					.appendContent("```");
+		dispatcher.on(ShowPlaylistEvent.class)
+			.flatMap(event -> {
+				Optional<MusicPlayer> playerOpts = getPlayer(event);
+				if (!playerOpts.isPresent()){
+					return Mono.empty();
+				}
 
-			int i = 1;
-			String moreSongs = " \n and %d more...";
-			for(AudioTrack track : playlist)
-			{
-				// The playlist size may be too large to send a message in
-				// as the maximum message may be IMessage.MAX_MESSAGE_LENGTH characters long.
-				// Reserving two digits for the amount of songs
-				String trackString = String.format("\n %d. %s", i++, TrackUtils.getReadableTrack(track));
-				if((trackString.length() + messageBuilder.getContent().length()) <
-					(IMessage.MAX_MESSAGE_LENGTH - moreSongs.length() - 2))
+				List<AudioTrack> playlist = playerOpts.get().getPlayList();
+				TextChannel channel = event.getTextChannel();
+				if(playlist.isEmpty())
 				{
-					messageBuilder.appendContent(trackString);
+					return channel.createMessage("No songs added to the playlist.");
 				}
 				else
 				{
-					// We have reached the limit, print out the more songs string
-					messageBuilder.appendContent(String.format(moreSongs, playlist.size() - i + 1));
-					break;
+					StringBuilder sb = new StringBuilder("```");
+
+					int i = 1;
+					String moreSongs = " \n and %d more...";
+					for(AudioTrack track : playlist)
+					{
+
+						// The playlist size may be too large to send a message in
+						// as the maximum message may be IMessage.MAX_MESSAGE_LENGTH characters long.
+						// Reserving two digits for the amount of songs
+						String trackString = String.format("\n %d. %s", i++, TrackUtils.getReadableTrack(track));
+						if((trackString.length() + sb.length()) <
+							(Message.MAX_CONTENT_LENGTH - moreSongs.length() - 2))
+						{
+							sb.append(trackString);
+						}
+						else
+						{
+							// We have reached the limit, print out the more songs string
+							sb.append(String.format(moreSongs, playlist.size() - i + 1));
+							break;
+						}
+					}
+					sb.append("```");
+
+					return channel.createMessage(sb.toString())
+						.flatMap(msg -> msg.addReaction(ReactionEmoji.unicode(PLAY_PAUSE_EMOJI))
+							.then(msg.addReaction(ReactionEmoji.unicode(NEXT_TRACK_EMOJI))));
 				}
-			}
-			messageBuilder.appendContent("```");
-			IMessage message = sendMessage(messageBuilder);
-
-			RequestBuilder builder = new RequestBuilder(client);
-			builder.shouldBufferRequests(true);
-
-			builder.doAction(() -> addReaction(message, PLAY_PAUSE_EMOJI))
-				.andThen(() -> addReaction(message, NEXT_TRACK_EMOJI));
-
-			builder.execute();
-		}
+			}).subscribe();
 	}
 
-	@EventSubscriber
-	public void handleClearPlaylistEvent(ClearPlaylistEvent event)
+	private void handleClearPlaylistEvent()
 	{
-		getPlayer(event).clearPlaylist();
-		sendMessage(event.getTextChannel(), "Playlist cleared.");
+		dispatcher.on(ClearPlaylistEvent.class)
+			.flatMap(event -> getPlayer(event)
+				.map(player -> {
+					player.clearPlaylist();
+					return event.getTextChannel().createMessage("Playlist cleared.");
+				}).orElse(Mono.empty())
+			)
+			.subscribe();
 	}
 
-	@EventSubscriber
-	public void handlePauseEvent(PauseEvent event)
+	private void handlePauseEvent()
 	{
-		MusicPlayer musicPlayer = getPlayer(event);
-		IChannel channel = event.getTextChannel();
-		String shouldPause = event.shouldPause() == null
-			? ""
-			: event.shouldPause();
+		dispatcher.on(PauseEvent.class)
+			.flatMap(event -> getPlayer(event)
+				.map(player -> {
+					String shouldPause = event.shouldPause() == null
+						? ""
+						: event.shouldPause();
 
-		switch(shouldPause)
-		{
-			case "on":
-				musicPlayer.pause(true);
-				break;
-			case "off":
-				musicPlayer.pause( false);
-				break;
-			default:
-				sendMessage(channel, "Invalid pause command. Specify on or off, e.g. \"!pause on\"");
-		}
+					switch(shouldPause)
+					{
+						case "on":
+							player.pause(true);
+							break;
+						case "off":
+							player.pause(false);
+							break;
+						default:
+							return event.getTextChannel()
+								.createMessage("Invalid pause command. Specify on or off, e.g. \"!pause on\"");
+					}
+
+					return Mono.empty();
+				}).orElse(Mono.empty())
+			).subscribe();
 	}
 
-	@EventSubscriber
-	public void handleReactionEvent(ReactionEvent event)
+	private void handleReactionEvent()
 	{
-		if(!event.getUser().isBot())
-		{
-			ReactionEmoji emoji = event.getReaction().getEmoji();
-			if(emoji != null)
-			{
-				MusicPlayer player = playerFactory.getMusicPlayer(event.getGuild());
-				switch(emoji.getName())
-				{
-					case PLAY_PAUSE_EMOJI:
-						player.pause(!player.isPaused());
-						break;
-					case NEXT_TRACK_EMOJI:
-						player.skipTrack();
-						break;
+		Flux.merge(
+			dispatcher.on(ReactionAddEvent.class)
+				.flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))),
+			dispatcher.on(ReactionRemoveEvent.class)
+				.flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))))
+			.filter(obj -> !obj.getT1().isBot())
+			.subscribe(tuple -> {
+				Optional<ReactionEmoji.Unicode> unicode = tuple.getT2().asUnicodeEmoji();
+				Optional<Snowflake> guildId = tuple.getT3();
+
+				if (guildId.isPresent() && unicode.isPresent()){
+					Optional<MusicPlayer> playerOpts = playerFactory
+						.getMusicPlayer(guildId.get());
+
+					playerOpts.ifPresent(player -> {
+						switch(unicode.get().getRaw())
+						{
+							case PLAY_PAUSE_EMOJI:
+								player.pause(!player.isPaused());
+								break;
+							case NEXT_TRACK_EMOJI:
+								player.skipTrack();
+								break;
+						}
+					});
 				}
-			}
-		}
+			});
 	}
 	
 	private boolean isInteger(String s)
@@ -265,14 +323,8 @@ public class RadioListener
 	 * @return
 	 * 		the {@link MusicPlayer} associated with the specified {@link KensaEvent}
 	 */
-	private MusicPlayer getPlayer(KensaEvent event)
+	private Optional<MusicPlayer> getPlayer(KensaEvent event)
 	{
 		return playerFactory.getMusicPlayer(event);
-	}
-
-	private boolean addReaction(IMessage message, String reaction)
-	{
-		message.addReaction(ReactionEmoji.of(reaction));
-		return true;
 	}
 }

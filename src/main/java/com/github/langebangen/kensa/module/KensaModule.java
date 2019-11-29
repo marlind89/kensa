@@ -6,10 +6,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import discord4j.core.DiscordClient;
+import discord4j.core.DiscordClientBuilder;
+import discord4j.core.event.EventDispatcher;
 import rita.RiMarkov;
-import sx.blah.discord.api.ClientBuilder;
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.util.DiscordException;
 
 import org.cfg4j.provider.ConfigurationProvider;
 import org.slf4j.Logger;
@@ -75,12 +75,14 @@ public class KensaModule
 
 	@Provides
 	@Singleton
-	public IDiscordClient getDiscordClient(DiscordConfig discordConfig)
-			throws DiscordException
+	public DiscordClient getDiscordClient(DiscordConfig discordConfig)
 	{
-		return new ClientBuilder()
-			.withToken(discordConfig.token())
-			.build();
+		return new DiscordClientBuilder(discordConfig.token()).build();
+	}
+
+	@Provides
+	public EventDispatcher provideEventDispatcher(DiscordClient client){
+		return client.getEventDispatcher();
 	}
 
 	@Provides

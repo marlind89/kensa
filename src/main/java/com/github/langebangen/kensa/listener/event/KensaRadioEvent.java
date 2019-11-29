@@ -1,23 +1,17 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class KensaRadioEvent extends KensaEvent
 {
-	private final AudioPlayer player;
 
-	public KensaRadioEvent(IChannel channel, AudioPlayer player)
-	{
-		super(channel);
-		this.player = player;
-	}
 
-	public AudioPlayer getPlayer()
+	public KensaRadioEvent(DiscordClient client, TextChannel channel)
 	{
-		return player;
+		super(client, channel);
 	}
 }

@@ -1,21 +1,14 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.MessageBuilder;
+import discord4j.core.object.entity.TextChannel;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
-import com.neovisionaries.i18n.CountryCode;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
@@ -27,10 +20,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.specification.Paging;
-import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
-import com.wrapper.spotify.model_objects.specification.Track;
 
 /**
  * Implementation of {@link MusicPlayer} using the lava player library
@@ -88,12 +77,10 @@ public class LavaMusicPlayer
 			}
 		}
 
-		MessageBuilder messageBuilder = new MessageBuilder(event.getClient())
-			.withChannel(event.getTextChannel()).appendContent("```");
-
+		StringBuilder sb = new StringBuilder("```");
 		if(trackInfos.isEmpty())
 		{
-			messageBuilder.appendContent("Could not find anything matching the search query.");
+			sb.append("Could not find anything matching the search query.");
 		}
 		else
 		{
@@ -105,12 +92,12 @@ public class LavaMusicPlayer
 				// length is not calculated
 				String duration =
 					trackInfo.length != -1 ? TrackUtils.getReadableDuration(trackInfo.length): "";
-				messageBuilder.appendContent(youtubeId);
-				messageBuilder.appendContent(" - " + title + " " + duration + "\n");
+				sb.append(youtubeId);
+				sb.append(" - " + title + " " + duration + "\n");
 			}
 		}
-		messageBuilder.appendContent("```");
-		messageBuilder.send();
+		sb.append("```");
+		event.getTextChannel().createMessage(sb.toString()).subscribe();
 	}
 
 	@Override
@@ -171,7 +158,7 @@ public class LavaMusicPlayer
 		trackScheduler.shuffle();
 	}
 
-	private void loadTrack(String songIdentity, IChannel channel, boolean isPlaylistRequest)
+	private void loadTrack(String songIdentity, TextChannel channel, boolean isPlaylistRequest)
 	{
 		String playListIdentifier = null;
 		if(isPlaylistRequest)
@@ -195,9 +182,7 @@ public class LavaMusicPlayer
 			{
 				String readableTrack = TrackUtils.getReadableTrack(track);
 
-				new MessageBuilder(channel.getClient()).withChannel(channel)
-					.appendContent("Queued ")
-					.appendContent(readableTrack, MessageBuilder.Styles.BOLD).build();
+				channel.createMessage("Queued **" + readableTrack + "**").subscribe();
 
 				trackScheduler.queue(track);
 			}
@@ -214,10 +199,9 @@ public class LavaMusicPlayer
 				}
 				else
 				{
-					new MessageBuilder(channel.getClient()).withChannel(channel)
-						.appendContent("Queued ").appendContent(
-						playlist.getName() + " [" + playlist.getTracks().size() + " songs]",
-						MessageBuilder.Styles.BOLD).build();
+					channel.createMessage("Queued **" + playlist.getName()
+						+ " [" + playlist.getTracks().size() + " songs]**")
+						.subscribe();
 
 					trackScheduler.queue(playlist);
 				}
@@ -233,16 +217,14 @@ public class LavaMusicPlayer
 				}
 				else
 				{
-					new MessageBuilder(channel.getClient()).withChannel(channel)
-						.appendContent("Nope couldn't find that..").build();
+					channel.createMessage("Nope couldn't find that..").subscribe();
 				}
 			}
 
 			@Override
 			public void loadFailed(FriendlyException exception)
 			{
-				new MessageBuilder(channel.getClient()).withChannel(channel)
-					.appendContent(exception.getMessage()).build();
+				channel.createMessage(exception.getMessage()).subscribe();
 			}
 		});
 	}

@@ -15,6 +15,7 @@ import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceMan
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
+import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 
 public class LavaplayerModule
 	extends AbstractModule
@@ -26,8 +27,8 @@ public class LavaplayerModule
 		YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(true);
 		bind(YoutubeAudioSourceManager.class).toInstance(ytSourceManager);
 		bind(YoutubeSearchProvider.class).toInstance(new YoutubeSearchProvider(ytSourceManager));
-
 	}
+
 
 	@Provides
 	@Singleton
@@ -45,6 +46,7 @@ public class LavaplayerModule
 		playerManager.registerSourceManager(new HttpAudioSourceManager());
 		playerManager.registerSourceManager(spotifySourceManager);
 		AudioSourceManagers.registerLocalSource(playerManager);
+		playerManager.getConfiguration().setFrameBufferFactory((NonAllocatingAudioFrameBuffer::new));
 		return playerManager;
 	}
 }

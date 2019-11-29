@@ -1,15 +1,18 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
+
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 
 /**
  * @author Martin.
  */
 public class ShufflePlaylistEvent extends KensaRadioEvent
 {
-	public ShufflePlaylistEvent(IChannel textChannel, AudioPlayer player)
+	public ShufflePlaylistEvent(DiscordClient client,
+		TextChannel textChannel)
 	{
-		super(textChannel, player);
+		super(client, textChannel);
 	}
 }

@@ -1,6 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
@@ -10,9 +11,9 @@ public class InsultPersistEvent extends KensaEvent
 	private final boolean added;
 	private final String insult;
 
-	public InsultPersistEvent(IChannel textChannel, boolean added, String insult)
+	public InsultPersistEvent(DiscordClient client, TextChannel textChannel, boolean added, String insult)
 	{
-		super(textChannel);
+		super(client, textChannel);
 		this.added = added;
 		this.insult = insult;
 	}

@@ -1,15 +1,15 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.api.events.Event;
-import sx.blah.discord.handle.obj.IChannel;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
  */
 public class BabylonEvent extends KensaEvent
 {
-	public BabylonEvent(IChannel textChannel)
+	public BabylonEvent(DiscordClient client, TextChannel textChannel)
 	{
-		super(textChannel);
+		super(client, textChannel);
 	}
 }

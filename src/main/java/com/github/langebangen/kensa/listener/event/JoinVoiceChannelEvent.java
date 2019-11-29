@@ -1,6 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.handle.obj.IChannel;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
@@ -9,9 +10,9 @@ public class JoinVoiceChannelEvent extends KensaEvent
 {
 	private final String channelName;
 
-	public JoinVoiceChannelEvent(IChannel channel, String channelName)
+	public JoinVoiceChannelEvent(DiscordClient client, TextChannel channel, String channelName)
 	{
-		super(channel);
+		super(client, channel);
 		this.channelName = channelName;
 	}
 

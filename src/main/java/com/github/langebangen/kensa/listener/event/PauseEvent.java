@@ -1,8 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import sx.blah.discord.api.events.Event;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.audio.AudioPlayer;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.TextChannel;
 
 /**
  * @author Martin.
@@ -11,15 +10,9 @@ public class PauseEvent extends KensaRadioEvent
 {
 	private final String shouldPause;
 
-	/**
-	 *
-	 * @param channel
-	 * @param player
-	 * @param command
-	 */
-	public PauseEvent(IChannel channel, AudioPlayer player, String shouldPause)
+	public PauseEvent(DiscordClient client, TextChannel channel, String shouldPause)
 	{
-		super(channel, player);
+		super(client, channel);
 		this.shouldPause = shouldPause;
 	}
 

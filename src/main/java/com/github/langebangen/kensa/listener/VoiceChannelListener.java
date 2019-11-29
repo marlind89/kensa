@@ -1,14 +1,9 @@
 package com.github.langebangen.kensa.listener;
 
-import java.util.List;
+import discord4j.core.DiscordClient;
+import discord4j.core.object.entity.VoiceChannel;
 
-import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.IVoiceChannel;
-import sx.blah.discord.util.MissingPermissionsException;
-
+import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
 import com.google.inject.Inject;
@@ -20,42 +15,47 @@ public class VoiceChannelListener
 	extends AbstractEventListener
 {
 
+	private final VoiceConnections voiceConnections;
+
 	@Inject
-	public VoiceChannelListener(IDiscordClient client)
+	public VoiceChannelListener(DiscordClient client,
+		VoiceConnections voiceConnections)
 	{
 		super(client);
+		this.voiceConnections = voiceConnections;
+
+		onChannelJoin();
+		onChannelLeave();
 	}
 
-	@EventSubscriber
-	public void onChannelJoin(JoinVoiceChannelEvent event)
+
+	private void onChannelJoin()
 	{
-		String voiceChannel = event.getVoiceChannelNameToJoin();
-		IChannel channel = event.getTextChannel();
-		List<IVoiceChannel> voiceChannels = channel.getGuild().getVoiceChannelsByName(voiceChannel);
-		if(voiceChannels.isEmpty())
-		{
-			sendMessage(channel, "No channel with name " + voiceChannel + " exists!");
-		}
-		else
-		{
-			try
-			{
-				voiceChannels.get(0).join();
-			}
-			catch(MissingPermissionsException e)
-			{
-				sendMessage(channel, "I have no permission to join this channel :frowning2:");
-			}
-		}
+		//TODO: If getVoiceChannelNameToJoin is null/empty then try to join
+		// the voice channel where the user requesting the bot to join is currently.
+		dispatcher.on(JoinVoiceChannelEvent.class)
+			.flatMap(event -> event.getTextChannel().getGuild()
+				.flatMap(guild -> guild.getChannels().ofType(VoiceChannel.class)
+					.filter(channel -> channel.getName().equals(event.getVoiceChannelNameToJoin()))
+					.singleOrEmpty()
+					.flatMap(voiceConnections::join)
+				)
+				.doOnSuccess(vc ->
+				{
+					if (vc == null)
+					{
+						event.getTextChannel()
+							.createMessage("No channel with name " + event.getVoiceChannelNameToJoin() + " exists!")
+							.subscribe();
+					}
+				})
+			)
+			.subscribe();
 	}
 
-	@EventSubscriber
-	public void onChannelLeave(LeaveVoiceChannelEvent event)
+	private void onChannelLeave()
 	{
-		IGuild guild = event.getTextChannel().getGuild();
-		client.getConnectedVoiceChannels()
-				.stream()
-				.filter(voiceChannel -> voiceChannel.getGuild().equals(guild))
-				.forEach(IVoiceChannel::leave);
+		dispatcher.on(LeaveVoiceChannelEvent.class)
+			.subscribe(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()));
 	}
 }

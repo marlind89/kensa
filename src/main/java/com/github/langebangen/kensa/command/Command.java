@@ -1,5 +1,7 @@
 package com.github.langebangen.kensa.command;
 
+import java.util.Optional;
+
 /**
  * Command containing an {@link Action} with the specified argument (if any)
  *
@@ -46,6 +48,9 @@ public class Command
 		return argument;
 	}
 
+	public static Command parseCommand(Optional<String> value){
+		return value.map(Command::parseCommand).orElse(null);
+	}
 	/**
 	 * Parses the specified value into a {@link Command}
 	 * and returns it.
