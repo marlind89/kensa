@@ -2,6 +2,7 @@ package com.github.langebangen.kensa.module;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -9,6 +10,12 @@ import java.util.concurrent.TimeUnit;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.EventDispatcher;
+import discord4j.rest.http.client.ClientException;
+import discord4j.rest.request.RouteMatcher;
+import discord4j.rest.request.RouterOptions;
+import discord4j.rest.response.ResponseFunction;
+import discord4j.rest.route.Routes;
+import reactor.retry.Retry;
 import rita.RiMarkov;
 
 import org.cfg4j.provider.ConfigurationProvider;
@@ -77,7 +84,20 @@ public class KensaModule
 	@Singleton
 	public DiscordClient getDiscordClient(DiscordConfig discordConfig)
 	{
-		return new DiscordClientBuilder(discordConfig.token()).build();
+		return new DiscordClientBuilder(discordConfig.token())
+			.setRouterOptions(RouterOptions.builder()
+				// globally suppress any not found (404) error
+				.onClientResponse(ResponseFunction.emptyIfNotFound())
+				// bad requests (400) while adding reactions will be suppressed
+				.onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
+				// server error (500) while creating a message will be retried, with backoff, until it succeeds
+				.onClientResponse(ResponseFunction.retryWhen(RouteMatcher.route(Routes.MESSAGE_CREATE),
+					Retry.onlyIf(ClientException.isRetryContextStatusCode(500))
+						.exponentialBackoffWithJitter(Duration.ofSeconds(2), Duration.ofSeconds(10))))
+				// wait 1 second and retry any server error (500)
+				.onClientResponse(ResponseFunction.retryOnceOnErrorStatus(500))
+				.build())
+			.build();
 	}
 
 	@Provides
