@@ -84,7 +84,7 @@ public class KensaModule
 	@Singleton
 	public DiscordClient getDiscordClient(DiscordConfig discordConfig)
 	{
-		return new DiscordClientBuilder(discordConfig.token())
+		return DiscordClientBuilder.create(discordConfig.token())
 			.setRouterOptions(RouterOptions.builder()
 				// globally suppress any not found (404) error
 				.onClientResponse(ResponseFunction.emptyIfNotFound())

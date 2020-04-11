@@ -11,6 +11,7 @@ import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
@@ -35,16 +36,20 @@ public class LavaMusicPlayer
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
 	private final SpotifyApi spotifyApi;
+	private final YoutubeAudioSourceManager ytSourceManager;
 
 	public LavaMusicPlayer(TrackScheduler trackScheduler, AudioPlayerManager playerManager,
 		YoutubeSearchProvider ytSearchProvider,
-		YoutubePlaylistSearchProvider ytPlaylistSearchProvider, SpotifyApi spotifyApi)
+		YoutubePlaylistSearchProvider ytPlaylistSearchProvider,
+		SpotifyApi spotifyApi,
+		YoutubeAudioSourceManager ytSourceManager)
 	{
 		this.trackScheduler = trackScheduler;
 		this.playerManager = playerManager;
 		this.ytSearchProvider = ytSearchProvider;
 		this.ytPlaylistSearchProvider = ytPlaylistSearchProvider;
 		this.spotifyApi = spotifyApi;
+		this.ytSourceManager = ytSourceManager;
 	}
 
 	@Override
@@ -63,7 +68,9 @@ public class LavaMusicPlayer
 		}
 		else
 		{
-			AudioItem audioItem = ytSearchProvider.loadSearchResult(event.getSearchQuery());
+			AudioItem audioItem = ytSearchProvider.loadSearchResult(event.getSearchQuery(),
+				func -> new YoutubeAudioTrack(func, ytSourceManager));
+
 			if(audioItem instanceof BasicAudioPlaylist)
 			{
 				for(AudioItem item : ((BasicAudioPlaylist)audioItem).getTracks())

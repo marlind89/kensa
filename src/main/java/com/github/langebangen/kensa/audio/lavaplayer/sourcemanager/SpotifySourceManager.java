@@ -94,7 +94,7 @@ public class SpotifySourceManager
 
 						return new YoutubeBestMatchAudioTrack(new AudioTrackInfo(firstArtistName + " - " + track.getName(), firstArtistName,
 							track.getDurationMs(), "", false, ""),
-							ytAudioSourceManager, ytSearchProvider);
+							ytAudioSourceManager, ytSearchProvider, ytAudioSourceManager);
 					})
 					.collect(Collectors.toList()));
 

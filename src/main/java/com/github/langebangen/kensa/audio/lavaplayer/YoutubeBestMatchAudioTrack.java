@@ -23,16 +23,19 @@ public class YoutubeBestMatchAudioTrack
 	private final AudioTrackInfo initialAudioTrackInfo;
 	private final YoutubeAudioSourceManager sourceManager;
 	private final YoutubeSearchProvider ytSearchProvider;
+	private final YoutubeAudioSourceManager youtubeAudioSourceManager;
 	private YoutubeAudioTrack track;
 
 	public YoutubeBestMatchAudioTrack(AudioTrackInfo initialAudioTrackInfo,
 		YoutubeAudioSourceManager sourceManager,
-		YoutubeSearchProvider ytSearchProvider)
+		YoutubeSearchProvider ytSearchProvider,
+		YoutubeAudioSourceManager youtubeAudioSourceManager)
 	{
 		super(initialAudioTrackInfo);
 		this.initialAudioTrackInfo = initialAudioTrackInfo;
 		this.sourceManager = sourceManager;
 		this.ytSearchProvider = ytSearchProvider;
+		this.youtubeAudioSourceManager = youtubeAudioSourceManager;
 		this.track = null;
 	}
 
@@ -83,7 +86,7 @@ public class YoutubeBestMatchAudioTrack
 	public AudioTrack makeClone()
 	{
 		YoutubeBestMatchAudioTrack clone = new YoutubeBestMatchAudioTrack(this.getInfo(),
-			sourceManager, ytSearchProvider);
+			sourceManager, ytSearchProvider, youtubeAudioSourceManager);
 		clone.setUserData(this.getUserData());
 
 		return clone;
@@ -94,7 +97,8 @@ public class YoutubeBestMatchAudioTrack
 		AudioTrackInfo trackInfo = this.getInfo();
 		String query = trackInfo.title + " " + trackInfo.author;
 
-		AudioItem audioItem = ytSearchProvider.loadSearchResult(query);
+		AudioItem audioItem = ytSearchProvider.loadSearchResult(query,
+			t -> new YoutubeAudioTrack(t, youtubeAudioSourceManager));
 
 		if(audioItem == AudioReference.NO_TRACK)
 		{

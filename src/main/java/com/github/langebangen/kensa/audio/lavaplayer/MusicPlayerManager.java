@@ -36,17 +36,19 @@ public class MusicPlayerManager
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final DiscordClient client;
 	private final SpotifyApi spotifyApi;
+	private final YoutubeAudioSourceManager ytAudioSourceManager;
 
 	@Inject
 	private MusicPlayerManager(DiscordClient client, SpotifyApi spotifyApi,
-		AudioPlayerManager playerManager)
+		AudioPlayerManager playerManager, YoutubeAudioSourceManager ytAudioSourceManager)
 	{
 		this.client = client;
 		this.spotifyApi = spotifyApi;
+		this.ytAudioSourceManager = ytAudioSourceManager;
 		this.musicPlayers = new HashMap<>();
 		this.playerManager = playerManager;
 		YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(true);
-		ytSearchProvider = new YoutubeSearchProvider(ytSourceManager);
+		ytSearchProvider = new YoutubeSearchProvider();
 		ytPlaylistSearchProvider = new YoutubePlaylistSearchProvider(ytSourceManager);
 	}
 
@@ -71,7 +73,7 @@ public class MusicPlayerManager
 		audioPlayer.addListener(scheduler);
 
 		musicPlayers.put(guildId, new LavaMusicPlayer(scheduler,
-			playerManager, ytSearchProvider, ytPlaylistSearchProvider, spotifyApi));
+			playerManager, ytSearchProvider, ytPlaylistSearchProvider, spotifyApi, ytAudioSourceManager));
 	}
 
 	/**
