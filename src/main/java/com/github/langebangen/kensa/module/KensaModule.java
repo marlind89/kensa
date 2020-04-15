@@ -26,6 +26,7 @@ import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
 import com.github.langebangen.kensa.config.DatabaseConfig;
 import com.github.langebangen.kensa.config.DiscordConfig;
 import com.github.langebangen.kensa.config.SpotifyApiConfig;
+import com.github.langebangen.kensa.config.YoutubeConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -65,6 +66,8 @@ public class KensaModule
 			.bind("spotify", SpotifyApiConfig.class));
 		bind(DiscordConfig.class).toInstance(configProvider
 			.bind("discord", DiscordConfig.class));
+		bind(YoutubeConfig.class).toInstance(configProvider
+			.bind("youtube", YoutubeConfig.class));
 	}
 
 

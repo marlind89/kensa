@@ -6,8 +6,12 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
@@ -20,6 +24,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 public class TrackScheduler
 	extends AudioEventAdapter
 {
+	private static final Logger logger = LoggerFactory.getLogger(TrackScheduler.class);
+
 	private final AudioPlayer player;
 	private final BlockingQueue<AudioTrack> queue;
 	private boolean loopEnabled;
@@ -45,6 +51,8 @@ public class TrackScheduler
 	 */
 	public void queue(AudioTrack track)
 	{
+		logger.info("Queuing " + track.getIdentifier());
+
 		// Calling startTrack with the noInterrupt set to true will start the track only if nothing is currently playing. If
 		// something is playing, it returns false and does nothing. In that case the audioPlayer was already playing so this
 		// track goes to the queue instead.
@@ -62,8 +70,10 @@ public class TrackScheduler
 	 */
 	public void queue(AudioPlaylist playlist)
 	{
+		logger.info("Queuing playlist: " + playlist.getName());
 		for(AudioTrack track : playlist.getTracks())
 		{
+			logger.info("Queuing playlist song: " + track.getIdentifier());
 			queue(track);
 		}
 	}
@@ -73,10 +83,13 @@ public class TrackScheduler
 	 */
 	public void nextTrack()
 	{
+		logger.info("Starting next track");
 		// Start the next track, regardless of something is already playing or not. In case queue was empty, we are
 		// giving null to startTrack, which is a valid argument and will simply stop the audioPlayer.
 		AudioTrack trackToPlay = queue.poll();
-		player.startTrack(trackToPlay, false);
+		if (trackToPlay != null){
+			player.startTrack(trackToPlay, false);
+		}
 	}
 
 	/**
@@ -121,6 +134,7 @@ public class TrackScheduler
 	 */
 	public synchronized void shuffle()
 	{
+		logger.info("Shuffling playlist");
 		List<AudioTrack> tmpList = new ArrayList<>(queue);
 		Collections.shuffle(tmpList);
 		queue.clear();
@@ -173,16 +187,33 @@ public class TrackScheduler
 	@Override
 	public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
 	{
+		logger.info("Track ended");
 		// Add the track again to the end of the queue if loop is enabled
 		if(loopEnabled)
 		{
+			logger.info("Looping enabled, add track to end of queue again.");
 			queue.offer(track.makeClone());
 		}
+
 		// Only start the next track if the end reason is suitable for it (FINISHED or LOAD_FAILED)
 		if(endReason.mayStartNext)
 		{
 			nextTrack();
 		}
+	}
+
+	@Override
+	public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs)
+	{
+		logger.info("Track is stuck! Start next song");
+		nextTrack();
+	}
+
+	@Override
+	public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception)
+	{
+		logger.error("Error in onTrackException", exception);
+		super.onTrackException(player, track, exception);
 	}
 
 	/**

@@ -76,7 +76,7 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>3.0</version>
+            <version>4.2.3</version>
         </dependency>
 
         <dependency>
@@ -119,6 +119,18 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>1.23.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-youtube</artifactId>
+            <version>v3-rev20200402-1.30.9</version>
         </dependency>
 
     </dependencies>

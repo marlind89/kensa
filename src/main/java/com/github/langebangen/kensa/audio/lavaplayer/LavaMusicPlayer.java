@@ -3,12 +3,14 @@ package com.github.langebangen.kensa.audio.lavaplayer;
 import java.util.LinkedList;
 import java.util.List;
 
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.TextChannel;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
+import com.github.langebangen.kensa.youtube.YoutubeApiService;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
@@ -34,20 +36,21 @@ public class LavaMusicPlayer
 	private final TrackScheduler trackScheduler;
 	private final AudioPlayerManager playerManager;
 	private final YoutubeSearchProvider ytSearchProvider;
-	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
+	private final YoutubeApiService youtubeApiService;
 	private final SpotifyApi spotifyApi;
 	private final YoutubeAudioSourceManager ytSourceManager;
 
-	public LavaMusicPlayer(TrackScheduler trackScheduler, AudioPlayerManager playerManager,
+	public LavaMusicPlayer(TrackScheduler trackScheduler,
+		AudioPlayerManager playerManager,
 		YoutubeSearchProvider ytSearchProvider,
-		YoutubePlaylistSearchProvider ytPlaylistSearchProvider,
+		YoutubeApiService youtubeApiService,
 		SpotifyApi spotifyApi,
 		YoutubeAudioSourceManager ytSourceManager)
 	{
 		this.trackScheduler = trackScheduler;
 		this.playerManager = playerManager;
 		this.ytSearchProvider = ytSearchProvider;
-		this.ytPlaylistSearchProvider = ytPlaylistSearchProvider;
+		this.youtubeApiService = youtubeApiService;
 		this.spotifyApi = spotifyApi;
 		this.ytSourceManager = ytSourceManager;
 	}
@@ -64,7 +67,7 @@ public class LavaMusicPlayer
 		List<AudioTrackInfo> trackInfos = new LinkedList<>();
 		if(event.isPlaylistSearch())
 		{
-			trackInfos.addAll(ytPlaylistSearchProvider.searchPlaylists(event.getSearchQuery()));
+			trackInfos.addAll(youtubeApiService.searchPlaylists(event.getSearchQuery()));
 		}
 		else
 		{
@@ -103,8 +106,13 @@ public class LavaMusicPlayer
 				sb.append(" - " + title + " " + duration + "\n");
 			}
 		}
-		sb.append("```");
-		event.getTextChannel().createMessage(sb.toString()).subscribe();
+
+
+		String message = sb.toString();
+
+		event.getTextChannel()
+			.createMessage(message.substring(0, Math.min(message.length(), Message.MAX_CONTENT_LENGTH - 4)) + "```")
+			.subscribe();
 	}
 
 	@Override
@@ -170,7 +178,7 @@ public class LavaMusicPlayer
 		String playListIdentifier = null;
 		if(isPlaylistRequest)
 		{
-			List<AudioTrackInfo> playListIdentifiers = ytPlaylistSearchProvider
+			List<AudioTrackInfo> playListIdentifiers = youtubeApiService
 				.searchPlaylists(songIdentity);
 			playListIdentifier = playListIdentifiers.isEmpty() ?
 				"ytsearch:" + songIdentity:

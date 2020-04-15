@@ -41,38 +41,41 @@ public class KensaApp
 	 */
 	public static void main(String[] args)
 	{
-		long voiceChannelId = 0;
-		if (args.length > 0)
-		{
-			String voiceChannelToConnectTo = args[0];
-			if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
-			{
-				voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
-			}
-		}
-
-		ConfigFilesProvider configFilesProvider = () -> Collections
-			.singletonList(Paths.get(System.getProperty("user.dir"), "config.yaml"));
-
-		ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
-		ConfigurationProvider provider = new ConfigurationProviderBuilder()
-			.withConfigurationSource(source)
-        	.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
-			.build();
-
-		Hooks.onOperatorDebug();
-
-		Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
-		DiscordClient dcClient = injector.getInstance(DiscordClient.class);
 		try
 		{
+			long voiceChannelId = 0;
+			if (args.length > 0)
+			{
+				String voiceChannelToConnectTo = args[0];
+				if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
+				{
+					voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
+				}
+			}
+
+			ConfigFilesProvider configFilesProvider = () -> Collections
+				.singletonList(Paths.get(System.getProperty("user.dir"), "config.yaml"));
+
+			ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
+			ConfigurationProvider provider = new ConfigurationProviderBuilder()
+				.withConfigurationSource(source)
+				.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
+				.build();
+
+			Hooks.onOperatorDebug();
+
+			Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
+			DiscordClient dcClient = injector.getInstance(DiscordClient.class);
+
 			registerListeners(injector);
+
+
+			dcClient.login().block();
 		}
 		catch(Exception e){
 			System.out.println(e);
 		}
 
-		dcClient.login().block();
 	}
 
 	private static void registerListeners(Injector injector)

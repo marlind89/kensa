@@ -12,6 +12,7 @@ import discord4j.core.object.util.Snowflake;
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
+import com.github.langebangen.kensa.youtube.YoutubeApiService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -30,26 +31,28 @@ import com.wrapper.spotify.SpotifyApi;
 @Singleton
 public class MusicPlayerManager
 {
-	public final Map<Snowflake, MusicPlayer> musicPlayers;
+	private final Map<Snowflake, MusicPlayer> musicPlayers;
 	private final AudioPlayerManager playerManager;
-	private final YoutubePlaylistSearchProvider ytPlaylistSearchProvider;
+	private final YoutubeApiService youtubeApiService;
 	private final YoutubeSearchProvider ytSearchProvider;
 	private final DiscordClient client;
 	private final SpotifyApi spotifyApi;
 	private final YoutubeAudioSourceManager ytAudioSourceManager;
 
 	@Inject
-	private MusicPlayerManager(DiscordClient client, SpotifyApi spotifyApi,
-		AudioPlayerManager playerManager, YoutubeAudioSourceManager ytAudioSourceManager)
+	private MusicPlayerManager(DiscordClient client,
+		SpotifyApi spotifyApi,
+		AudioPlayerManager playerManager,
+		YoutubeAudioSourceManager ytAudioSourceManager,
+		YoutubeApiService youtubeApiService)
 	{
 		this.client = client;
 		this.spotifyApi = spotifyApi;
 		this.ytAudioSourceManager = ytAudioSourceManager;
 		this.musicPlayers = new HashMap<>();
 		this.playerManager = playerManager;
-		YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(true);
+		this.youtubeApiService = youtubeApiService;
 		ytSearchProvider = new YoutubeSearchProvider();
-		ytPlaylistSearchProvider = new YoutubePlaylistSearchProvider(ytSourceManager);
 	}
 
 	/**
@@ -73,7 +76,7 @@ public class MusicPlayerManager
 		audioPlayer.addListener(scheduler);
 
 		musicPlayers.put(guildId, new LavaMusicPlayer(scheduler,
-			playerManager, ytSearchProvider, ytPlaylistSearchProvider, spotifyApi, ytAudioSourceManager));
+			playerManager, ytSearchProvider, youtubeApiService, spotifyApi, ytAudioSourceManager));
 	}
 
 	/**

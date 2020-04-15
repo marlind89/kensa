@@ -11,8 +11,11 @@ import javax.inject.Named;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.event.domain.lifecycle.ReconnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.TextChannel;
 import discord4j.core.object.entity.VoiceChannel;
@@ -40,6 +43,7 @@ import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LoopPlaylistEvent;
 import com.github.langebangen.kensa.listener.event.PauseEvent;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
+import com.github.langebangen.kensa.listener.event.ReconnectVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.RestartKensaEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.github.langebangen.kensa.listener.event.ShowPlaylistEvent;
@@ -64,7 +68,7 @@ public class EventListener
 	private final RiMarkov markov;
 	private final MusicPlayerManager musicPlayerManager;
 	private final VoiceConnections voiceConnections;
-	private final long latestVoiceChannelId;
+	private long latestVoiceChannelId;
 	private final AudioPlayerManager audioPlayerManager;
 
 	@Inject
@@ -85,6 +89,7 @@ public class EventListener
 
 		onReady();
 		onMessageReceivedEvent();
+		onReconnectEvent();
 	}
 
 	/**
@@ -93,13 +98,15 @@ public class EventListener
 	private void onReady()
 	{
 		dispatcher.on(ReadyEvent.class)
-			.doOnNext(e -> logger.info("Logged in successfully.!"))
+			.take(1)
+			.doOnNext(e -> logger.info("Logged in successfully!"))
 			.filter(msg -> latestVoiceChannelId > 0)
 			.map(msg -> client.getChannelById(Snowflake.of(latestVoiceChannelId)))
 			.ofType(VoiceChannel.class)
 			.flatMap(voiceChannel -> {
 				logger.info("Rejoining channel " + voiceChannel.getName());
 
+				latestVoiceChannelId = 0;
 				return voiceConnections.join(voiceChannel);
 			})
 			.subscribe();
@@ -177,6 +184,8 @@ public class EventListener
 						return Mono.just(new JoinVoiceChannelEvent(client, channel, argument));
 					case LEAVE:
 						return Mono.just(new LeaveVoiceChannelEvent(client, channel));
+					case RECONNECT:
+						return Mono.just(new ReconnectVoiceChannelEvent(client, channel));
 					/* Radio commands */
 					case PLAY:
 						String playArg = argument.replace("-p ", "");
@@ -205,6 +214,18 @@ public class EventListener
 				return Mono.empty();
 			})
 			.subscribe(dispatcher::publish);
+	}
+
+	private void onReconnectEvent()
+	{
+		dispatcher.on(ReconnectEvent.class)
+			.doOnNext(e -> logger.info("Received reconnect event"))
+			.flatMap(event -> event.getClient().getGuilds()
+				.flatMap(guild -> guild.getMemberById(event.getClient().getSelfId().get())))
+			.flatMap(Member::getVoiceState)
+			.flatMap(VoiceState::getChannel)
+			.flatMap(voiceConnections::reconnect)
+			.subscribe();
 	}
 
 	/**

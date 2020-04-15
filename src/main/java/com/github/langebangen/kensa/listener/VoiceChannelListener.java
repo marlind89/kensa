@@ -1,11 +1,14 @@
 package com.github.langebangen.kensa.listener;
 
 import discord4j.core.DiscordClient;
+import discord4j.core.object.VoiceState;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.VoiceChannel;
 
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
+import com.github.langebangen.kensa.listener.event.ReconnectVoiceChannelEvent;
 import com.google.inject.Inject;
 
 /**
@@ -26,8 +29,8 @@ public class VoiceChannelListener
 
 		onChannelJoin();
 		onChannelLeave();
+		onChannelRejoin();
 	}
-
 
 	private void onChannelJoin()
 	{
@@ -57,5 +60,16 @@ public class VoiceChannelListener
 	{
 		dispatcher.on(LeaveVoiceChannelEvent.class)
 			.subscribe(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()));
+	}
+
+	private void onChannelRejoin()
+	{
+		dispatcher.on(ReconnectVoiceChannelEvent.class)
+			.flatMap(event -> event.getClient().getSelf()
+				.flatMap(self -> self.asMember(event.getTextChannel().getGuildId())))
+			.flatMap(Member::getVoiceState)
+			.flatMap(VoiceState::getChannel)
+			.flatMap(voiceConnections::reconnect)
+			.subscribe();
 	}
 }

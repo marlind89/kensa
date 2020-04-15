@@ -203,9 +203,11 @@ public class RadioListener
 							break;
 						}
 					}
-					sb.append("```");
 
-					return channel.createMessage(sb.toString())
+
+					String message = sb.toString();
+
+					return channel.createMessage(message.substring(0, Math.min(message.length(), Message.MAX_CONTENT_LENGTH - 4)) + "```")
 						.flatMap(msg -> msg.addReaction(ReactionEmoji.unicode(PLAY_PAUSE_EMOJI))
 							.then(msg.addReaction(ReactionEmoji.unicode(NEXT_TRACK_EMOJI))));
 				}

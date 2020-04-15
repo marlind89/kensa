@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.VoiceChannel;
 import reactor.core.publisher.Mono;
 import rita.RiMarkov;
 
@@ -23,6 +22,7 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.langebangen.kensa.audio.VoiceChannelConnection;
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.command.Action;
@@ -192,17 +192,24 @@ public class TextChannelListener
 	public void onRestartKensaEvent()
 	{
 		dispatcher.on(RestartKensaEvent.class)
-			.doOnNext(event -> {
-				event.getTextChannel().createMessage("Restarting...").subscribe();
-
+			.flatMap(event ->
+			{
 				String voiceChannelId = "";
-				VoiceChannel voiceChannel = voiceConnections.getVoiceChannel(
-					event.getTextChannel().getGuildId());
-				if (voiceChannel != null)
+
+				VoiceChannelConnection vcc = voiceConnections
+					.disconnect(event.getTextChannel().getGuildId());
+
+				if (vcc != null)
 				{
-					voiceChannelId = " " + voiceChannel.getId().asLong();
+					voiceChannelId = " " + vcc.getVoiceChannel().getId().asLong();
 				}
 
+				return event.getTextChannel().createMessage("Restarting...")
+					.then(event.getClient().logout())
+					.thenReturn(voiceChannelId);
+			})
+			.doOnNext(voiceChannelId ->
+			{
 				List<String> command = new ArrayList<>();
 				command.add("/bin/bash");
 				command.add("-c");
@@ -216,9 +223,7 @@ public class TextChannelListener
 				}
 				catch(IOException e)
 				{
-					String message = "Failed to restart Kensa!";
-					logger.error(message , e);
-					event.getTextChannel().createMessage(message).subscribe();
+					logger.error("Failed to restart Kensa!" , e);
 				}
 			})
 			.subscribe();

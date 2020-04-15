@@ -9,6 +9,9 @@ import discord4j.voice.AudioProvider;
 import discord4j.voice.VoiceConnection;
 import reactor.core.publisher.Mono;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.langebangen.kensa.audio.lavaplayer.LavaPlayerAudioProvider;
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.google.inject.Inject;
@@ -19,6 +22,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 @Singleton
 public class VoiceConnections
 {
+	private static final Logger logger = LoggerFactory.getLogger(VoiceConnections.class);
 
 	private final AudioPlayerManager audioPlayerManager;
 	private final MusicPlayerManager musicPlayerManager;
@@ -33,15 +37,13 @@ public class VoiceConnections
 	}
 
 	public Mono<VoiceConnection> join(VoiceChannel voiceChannel){
-
 		AudioPlayer audioPlayer = audioPlayerManager.createPlayer();
 		AudioProvider audioProvider = new LavaPlayerAudioProvider(audioPlayer);
 		musicPlayerManager.putMusicPlayer(voiceChannel.getGuildId(), audioPlayer);
 
 		return voiceChannel.join(spec -> spec.setProvider(audioProvider))
-			.doOnNext(voiceConnection -> addVoiceConnection(
-				voiceChannel.getGuildId(),
-				new VoiceChannelConnection(voiceConnection, voiceChannel)));
+			.doOnNext(voiceConnection -> addVoiceConnection(voiceChannel.getGuildId(),
+				new VoiceChannelConnection(voiceConnection, voiceChannel, audioProvider)));
 	}
 
 	public VoiceChannel getVoiceChannel(Snowflake guildId){
@@ -54,12 +56,30 @@ public class VoiceConnections
 		return vcc.getVoiceChannel();
 	}
 
-	public void disconnect(Snowflake guildId){
+	public VoiceChannelConnection disconnect(Snowflake guildId){
 		VoiceChannelConnection removedVcc = voiceConnections.remove(guildId);
 		if (removedVcc != null)
 		{
 			removedVcc.getVoiceConnection().disconnect();
 		}
+		return removedVcc;
+	}
+
+	public Mono<VoiceConnection> reconnect(VoiceChannel voiceChannel){
+		VoiceChannelConnection vcc = disconnect(voiceChannel.getGuildId());
+
+		if (vcc == null)
+		{
+			return Mono.empty();
+		}
+
+		logger.info("Reconnecting to voice channel: " + voiceChannel.getName());
+
+		AudioProvider audioProvider = vcc.getAudioProvider();
+
+		return voiceChannel.join(spec -> spec.setProvider(audioProvider))
+			.doOnNext(vc -> addVoiceConnection(voiceChannel.getGuildId(),
+				new VoiceChannelConnection(vc, voiceChannel, audioProvider)));
 	}
 
 	private void addVoiceConnection(Snowflake guildId, VoiceChannelConnection voiceConnection){
