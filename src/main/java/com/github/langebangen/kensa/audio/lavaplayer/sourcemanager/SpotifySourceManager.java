@@ -57,7 +57,7 @@ public class SpotifySourceManager
 	{
 		String identifier = reference.identifier;
 
-		if (!identifier.matches("spotify:.+playlist:.+"))
+		if (!identifier.matches("spotify:playlist:.+"))
 		{
 			return null;
 		}
