@@ -1,6 +1,7 @@
 package com.github.langebangen.kensa;
 
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +70,9 @@ public class KensaApp
 
 			registerListeners(injector);
 
+			Runtime.getRuntime().addShutdownHook(new Thread(
+				() -> dcClient.logout().block(Duration.ofSeconds(10)))
+			);
 
 			dcClient.login().block();
 		}
