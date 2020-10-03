@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
 
 /**
  * @author Martin.
@@ -10,7 +10,7 @@ public class PauseEvent extends KensaRadioEvent
 {
 	private final String shouldPause;
 
-	public PauseEvent(DiscordClient client, TextChannel channel, String shouldPause)
+	public PauseEvent(GatewayDiscordClient client, TextChannel channel, String shouldPause)
 	{
 		super(client, channel);
 		this.shouldPause = shouldPause;

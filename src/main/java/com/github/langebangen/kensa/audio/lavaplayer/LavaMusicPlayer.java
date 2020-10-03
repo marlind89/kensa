@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.entity.channel.TextChannel;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;

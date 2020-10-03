@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Random;
 
 import javax.inject.Named;
 
-import discord4j.core.DiscordClient;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.lifecycle.ReconnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
@@ -17,9 +18,8 @@ import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.TextChannel;
-import discord4j.core.object.entity.VoiceChannel;
-import discord4j.core.object.util.Snowflake;
+import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.entity.channel.VoiceChannel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rita.RiMarkov;
@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.langebangen.kensa.audio.VoiceConnections;
-import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.BabylonEvent;
 import com.github.langebangen.kensa.listener.event.ClearPlaylistEvent;
@@ -50,7 +49,6 @@ import com.github.langebangen.kensa.listener.event.ShowPlaylistEvent;
 import com.github.langebangen.kensa.listener.event.ShufflePlaylistEvent;
 import com.github.langebangen.kensa.listener.event.SkipTrackEvent;
 import com.google.inject.Inject;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 
 /**
  * EventListener which listens on events from discord.
@@ -66,21 +64,16 @@ public class EventListener
 	private final File messageFile;
 	private final Random random;
 	private final RiMarkov markov;
-	private final MusicPlayerManager musicPlayerManager;
 	private final VoiceConnections voiceConnections;
 	private long latestVoiceChannelId;
-	private final AudioPlayerManager audioPlayerManager;
 
 	@Inject
-	public EventListener(DiscordClient client, RiMarkov markov,
-		AudioPlayerManager audioPlayerManager,
-		MusicPlayerManager musicPlayerManager,
+	public EventListener(GatewayDiscordClient client,
+		RiMarkov markov,
 		VoiceConnections voiceConnections,
 		@Named("latestVoiceChannelId") long latestVoiceChannelId)
 	{
 		super(client);
-		this.audioPlayerManager = audioPlayerManager;
-		this.musicPlayerManager = musicPlayerManager;
 		this.voiceConnections = voiceConnections;
 		this.latestVoiceChannelId = latestVoiceChannelId;
 		this.random = new Random();
@@ -101,12 +94,10 @@ public class EventListener
 			.take(1)
 			.doOnNext(e -> logger.info("Logged in successfully!"))
 			.filter(msg -> latestVoiceChannelId > 0)
-			.map(msg -> client.getChannelById(Snowflake.of(latestVoiceChannelId)))
+			.flatMap(msg -> client.getChannelById(Snowflake.of(latestVoiceChannelId)))
 			.ofType(VoiceChannel.class)
 			.flatMap(voiceChannel -> {
 				logger.info("Rejoining channel " + voiceChannel.getName());
-
-				latestVoiceChannelId = 0;
 				return voiceConnections.join(voiceChannel);
 			})
 			.subscribe();
@@ -128,7 +119,7 @@ public class EventListener
 			.doOnNext(message -> logMessage(message.getContent()))
 			.filter(message -> (random.nextFloat() * 100) > 99)
 			.flatMap(message -> message.getChannel()
-				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent().get())))
+				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent())))
 			.subscribe();
 
 		messageFlux
@@ -137,7 +128,9 @@ public class EventListener
 
 				return Mono.zip(Mono.justOrEmpty(command),
 					message.getAuthorAsMember().flatMap(member -> command.getAction().hasPermission(member)),
-					message.getGuild(), message.getChannel().ofType(TextChannel.class));
+					message.getGuild(),
+					message.getChannel().ofType(TextChannel.class),
+					message.getAuthorAsMember());
 			})
 			.flatMap(zip -> {
 
@@ -145,6 +138,7 @@ public class EventListener
 				boolean hasPermission = zip.getT2();
 				Guild guild = zip.getT3();
 				TextChannel channel = zip.getT4();
+				Member member = zip.getT5();
 				String argument = command.getArgument();
 
 				if (!hasPermission){
@@ -181,7 +175,7 @@ public class EventListener
 						}
 					/* Voice channel commands */
 					case JOIN:
-						return Mono.just(new JoinVoiceChannelEvent(client, channel, argument));
+						return Mono.just(new JoinVoiceChannelEvent(client, channel, argument, member));
 					case LEAVE:
 						return Mono.just(new LeaveVoiceChannelEvent(client, channel));
 					case RECONNECT:
@@ -189,7 +183,7 @@ public class EventListener
 					/* Radio commands */
 					case PLAY:
 						String playArg = argument.replace("-p ", "");
-						return Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument)));
+						return Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument), member));
 					case SKIP:
 						return Mono.just(new SkipTrackEvent(client, channel, argument));
 					case SONG:
@@ -218,13 +212,18 @@ public class EventListener
 
 	private void onReconnectEvent()
 	{
-		dispatcher.on(ReconnectEvent.class)
-			.doOnNext(e -> logger.info("Received reconnect event"))
-			.flatMap(event -> event.getClient().getGuilds()
-				.flatMap(guild -> guild.getMemberById(event.getClient().getSelfId().get())))
+		Flux<GatewayDiscordClient> reconnectEvent = dispatcher.on(ReconnectEvent.class)
+			.doOnNext(e -> logger.info("Received reconnect event")).map(Event::getClient);
+
+		Flux<GatewayDiscordClient> readyEvent = dispatcher.on(ReadyEvent.class).skip(1)
+			.doOnNext(e -> logger.info("Received new ready event")).map(Event::getClient);
+
+		reconnectEvent.mergeWith(readyEvent)
+			.flatMap(client -> client.getGuilds()
+				.flatMap(guild -> guild.getMemberById(client.getSelfId())))
 			.flatMap(Member::getVoiceState)
 			.flatMap(VoiceState::getChannel)
-			.flatMap(voiceConnections::reconnect)
+			.flatMap(vc -> voiceConnections.reconnect(vc, false))
 			.subscribe();
 	}
 
@@ -236,15 +235,10 @@ public class EventListener
 	 * @param message
 	 *      the message
 	 */
-	private void logMessage(Optional<String> message)
+	private void logMessage(String message)
 	{
-		if(!message.isPresent())
-		{
-			return;
-		}
-
 		StringBuilder sb = new StringBuilder();
-		for(String word : message.get().split(" "))
+		for(String word : message.split(" "))
 		{
 			if(!UrlValidator.getInstance().isValid(word)
 					&& !word.matches("<@!*\\d+>"))

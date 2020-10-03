@@ -1,8 +1,9 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.gateway.ShardInfo;
 
 /**
  * @author Martin.
@@ -11,9 +12,9 @@ public class KensaEvent extends Event
 {
 	private final TextChannel textChannel;
 
-	public KensaEvent(DiscordClient client, TextChannel textChannel)
+	public KensaEvent(GatewayDiscordClient client, TextChannel textChannel)
 	{
-		super(client);
+		super(client, ShardInfo.create(0, 1));
 		this.textChannel = textChannel;
 	}
 

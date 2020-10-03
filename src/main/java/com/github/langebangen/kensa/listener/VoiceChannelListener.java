@@ -1,9 +1,10 @@
 package com.github.langebangen.kensa.listener;
 
-import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.VoiceChannel;
+import discord4j.core.object.entity.channel.VoiceChannel;
+import reactor.core.publisher.Mono;
 
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
@@ -21,7 +22,7 @@ public class VoiceChannelListener
 	private final VoiceConnections voiceConnections;
 
 	@Inject
-	public VoiceChannelListener(DiscordClient client,
+	public VoiceChannelListener(GatewayDiscordClient client,
 		VoiceConnections voiceConnections)
 	{
 		super(client);
@@ -34,15 +35,26 @@ public class VoiceChannelListener
 
 	private void onChannelJoin()
 	{
-		//TODO: If getVoiceChannelNameToJoin is null/empty then try to join
-		// the voice channel where the user requesting the bot to join is currently.
 		dispatcher.on(JoinVoiceChannelEvent.class)
 			.flatMap(event -> event.getTextChannel().getGuild()
-				.flatMap(guild -> guild.getChannels().ofType(VoiceChannel.class)
-					.filter(channel -> channel.getName().equals(event.getVoiceChannelNameToJoin()))
-					.singleOrEmpty()
-					.flatMap(voiceConnections::join)
-				)
+				.flatMap(guild -> {
+					Mono<VoiceChannel> vcToJoin;
+					String voiceChannelNameToJoin = event.getVoiceChannelNameToJoin();
+					if (voiceChannelNameToJoin == null || voiceChannelNameToJoin.isEmpty())
+					{
+						vcToJoin = event.getMember()
+							.getVoiceState()
+							.flatMap(VoiceState::getChannel);
+					}
+					else
+					{
+						vcToJoin = guild.getChannels().ofType(VoiceChannel.class)
+							.filter(channel -> channel.getName().equals(event.getVoiceChannelNameToJoin()))
+							.singleOrEmpty();
+					}
+
+					return vcToJoin.flatMap(voiceConnections::join);
+				})
 				.doOnSuccess(vc ->
 				{
 					if (vc == null)
@@ -69,7 +81,7 @@ public class VoiceChannelListener
 				.flatMap(self -> self.asMember(event.getTextChannel().getGuildId())))
 			.flatMap(Member::getVoiceState)
 			.flatMap(VoiceState::getChannel)
-			.flatMap(voiceConnections::reconnect)
+			.flatMap(vc -> voiceConnections.reconnect(vc, true))
 			.subscribe();
 	}
 }

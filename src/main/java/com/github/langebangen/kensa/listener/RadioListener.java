@@ -3,13 +3,13 @@ package com.github.langebangen.kensa.listener;
 import java.util.List;
 import java.util.Optional;
 
-import discord4j.core.DiscordClient;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
-import discord4j.core.object.util.Snowflake;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -45,7 +45,7 @@ public class RadioListener
 	private static final String NEXT_TRACK_EMOJI = "\u23ed";
 
 	@Inject
-	public RadioListener(DiscordClient client, MusicPlayerManager playerFactory)
+	public RadioListener(GatewayDiscordClient client, MusicPlayerManager playerFactory)
 	{
 		super(client);
 		this.playerFactory = playerFactory;

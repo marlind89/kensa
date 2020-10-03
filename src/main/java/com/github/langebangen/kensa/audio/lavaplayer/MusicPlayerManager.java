@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import discord4j.core.DiscordClient;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.Activity;
 import discord4j.core.object.presence.Presence;
-import discord4j.core.object.util.Snowflake;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
@@ -35,12 +35,12 @@ public class MusicPlayerManager
 	private final AudioPlayerManager playerManager;
 	private final YoutubeApiService youtubeApiService;
 	private final YoutubeSearchProvider ytSearchProvider;
-	private final DiscordClient client;
+	private final GatewayDiscordClient client;
 	private final SpotifyApi spotifyApi;
 	private final YoutubeAudioSourceManager ytAudioSourceManager;
 
 	@Inject
-	private MusicPlayerManager(DiscordClient client,
+	private MusicPlayerManager(GatewayDiscordClient client,
 		SpotifyApi spotifyApi,
 		AudioPlayerManager playerManager,
 		YoutubeAudioSourceManager ytAudioSourceManager,

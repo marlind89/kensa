@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import reactor.core.publisher.Hooks;
 
 import org.cfg4j.provider.ConfigurationProvider;
@@ -51,6 +51,7 @@ public class KensaApp
 				if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
 				{
 					voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
+					logger.info("Started with an existing voice channel id: " + voiceChannelId);
 				}
 			}
 
@@ -66,15 +67,15 @@ public class KensaApp
 			Hooks.onOperatorDebug();
 
 			Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
-			DiscordClient dcClient = injector.getInstance(DiscordClient.class);
+			GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
 
 			registerListeners(injector);
 
 			Runtime.getRuntime().addShutdownHook(new Thread(
-				() -> dcClient.logout().block(Duration.ofSeconds(10)))
+				() -> gateway.logout().block(Duration.ofSeconds(10)))
 			);
 
-			dcClient.login().block();
+			gateway.onDisconnect().block();
 		}
 		catch(Exception e){
 			System.out.println(e);

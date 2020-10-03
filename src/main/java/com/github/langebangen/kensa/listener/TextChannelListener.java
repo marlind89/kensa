@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import reactor.core.publisher.Mono;
 import rita.RiMarkov;
@@ -55,7 +55,7 @@ public class TextChannelListener
 	private int lastInsultId;
 
 	@Inject
-	public TextChannelListener(DiscordClient client,
+	public TextChannelListener(GatewayDiscordClient client,
 		RiMarkov markov, Babylon babylon, Storage storage,
 		VoiceConnections voiceConnections)
 	{
@@ -104,8 +104,7 @@ public class TextChannelListener
 		dispatcher.on(MessageCreateEvent.class)
 			.flatMap(event -> event.getGuild()
 				.map(guild -> guild.getClient().getSelfId())
-				.filter(Optional::isPresent)
-				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId.get()))
+				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId))
 				.flatMap(botId -> event.getMessage().getChannel())
 				.flatMap(channel -> channel.createMessage(markov.generateSentence()))
 			)

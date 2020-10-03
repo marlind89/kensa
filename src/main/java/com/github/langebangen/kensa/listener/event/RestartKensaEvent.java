@@ -1,11 +1,11 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
 
 public class RestartKensaEvent extends KensaEvent
 {
-	public RestartKensaEvent(DiscordClient client,
+	public RestartKensaEvent(GatewayDiscordClient client,
 		TextChannel textChannel)
 	{
 		super(client, textChannel);

@@ -1,6 +1,6 @@
 package com.github.langebangen.kensa.audio;
 
-import discord4j.core.object.entity.VoiceChannel;
+import discord4j.core.object.entity.channel.VoiceChannel;
 import discord4j.voice.AudioProvider;
 import discord4j.voice.VoiceConnection;
 

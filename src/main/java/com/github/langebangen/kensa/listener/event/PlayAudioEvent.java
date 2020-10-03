@@ -1,7 +1,8 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.channel.TextChannel;
 
 /**
  * @author Martin.
@@ -10,13 +11,15 @@ public class PlayAudioEvent extends KensaRadioEvent
 {
 	private final String url;
 	private final boolean isPlaylistRequest;
+	private final Member member;
 
-	public PlayAudioEvent(DiscordClient client, TextChannel textChannel,
-		String identifier, boolean isPlaylistRequest)
+	public PlayAudioEvent(GatewayDiscordClient client, TextChannel textChannel,
+		String identifier, boolean isPlaylistRequest, Member member)
 	{
 		super(client, textChannel);
 		this.url = identifier;
 		this.isPlaylistRequest = isPlaylistRequest;
+		this.member = member;
 	}
 
 	/**
@@ -39,5 +42,9 @@ public class PlayAudioEvent extends KensaRadioEvent
 	public boolean isPlaylistRequest()
 	{
 		return isPlaylistRequest;
+	}
+	public Member getMember()
+	{
+		return member;
 	}
 }

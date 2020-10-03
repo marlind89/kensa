@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
 
 /**
  * @author Martin.
@@ -9,7 +9,7 @@ import discord4j.core.object.entity.TextChannel;
 public class LoopPlaylistEvent extends KensaRadioEvent
 {
 	private final String loopEnabled;
-	public LoopPlaylistEvent(DiscordClient client, TextChannel textChannel, String loopEnabled)
+	public LoopPlaylistEvent(GatewayDiscordClient client, TextChannel textChannel, String loopEnabled)
 	{
 		super(client, textChannel);
 		this.loopEnabled = loopEnabled;

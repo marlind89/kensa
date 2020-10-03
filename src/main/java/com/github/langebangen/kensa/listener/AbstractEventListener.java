@@ -1,6 +1,6 @@
 package com.github.langebangen.kensa.listener;
 
-import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
 
 /**
@@ -9,9 +9,9 @@ import discord4j.core.event.EventDispatcher;
 public abstract class AbstractEventListener
 {
 	protected final EventDispatcher dispatcher;
-	protected final DiscordClient client;
+	protected final GatewayDiscordClient client;
 
-	protected AbstractEventListener(DiscordClient client)
+	protected AbstractEventListener(GatewayDiscordClient client)
 	{
 		this.client = client;
 		this.dispatcher = client.getEventDispatcher();

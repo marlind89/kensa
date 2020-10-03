@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.listener.event;
 
-import discord4j.core.DiscordClient;
-import discord4j.core.object.entity.TextChannel;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
 
 /**
  * @author Martin.
@@ -12,7 +12,7 @@ public class SearchYoutubeEvent
 	private final String searchQuery;
 	private final boolean isPlaylistSearch;
 
-	public SearchYoutubeEvent(DiscordClient client, TextChannel textChannel,
+	public SearchYoutubeEvent(GatewayDiscordClient client, TextChannel textChannel,
 		String searchQuery, boolean isPlaylistSearch)
 	{
 		super(client, textChannel);
