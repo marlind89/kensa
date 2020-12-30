@@ -13,24 +13,27 @@ public class PlayAudioEvent extends KensaRadioEvent
 	private final String url;
 	private final boolean isPlaylistRequest;
 	private final Member member;
+	private final boolean playImmediately;
 
 	public PlayAudioEvent(GatewayDiscordClient client, TextChannel textChannel,
-		String identifier, boolean isPlaylistRequest, Member member)
+		String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
 	{
 		super(client, textChannel);
 		this.url = identifier;
 		this.isPlaylistRequest = isPlaylistRequest;
 		this.member = member;
+		this.playImmediately = playImmediately;
 	}
 
 	public PlayAudioEvent(GatewayDiscordClient client, Snowflake guildId,
-		 String identifier, boolean isPlaylistRequest, Member member)
+		 String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
 	{
 		super(client, null);
 		this.url = identifier;
 		this.isPlaylistRequest = isPlaylistRequest;
 		this.member = member;
 		setGuildId(guildId);
+		this.playImmediately = playImmediately;
 	}
 	/**
 	 * Gets the song identity requested
@@ -56,5 +59,10 @@ public class PlayAudioEvent extends KensaRadioEvent
 	public Member getMember()
 	{
 		return member;
+	}
+
+	public boolean getPlayImmediately()
+	{
+		return this.playImmediately;
 	}
 }

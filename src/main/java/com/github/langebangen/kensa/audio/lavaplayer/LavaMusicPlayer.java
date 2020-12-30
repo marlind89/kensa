@@ -53,7 +53,7 @@ public class LavaMusicPlayer
 	@Override
 	public void stream(PlayAudioEvent event)
 	{
-		loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest());
+		loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest(), event.getPlayImmediately());
 	}
 
 	@Override
@@ -168,7 +168,7 @@ public class LavaMusicPlayer
 		trackScheduler.shuffle();
 	}
 
-	private void loadTrack(String songIdentity, TextChannel channel, boolean isPlaylistRequest)
+	private void loadTrack(String songIdentity, TextChannel channel, boolean isPlaylistRequest, boolean playImmediately)
 	{
 		String playListIdentifier = null;
 		if(isPlaylistRequest)
@@ -196,8 +196,15 @@ public class LavaMusicPlayer
 					channel.createMessage("Queued **" + readableTrack + "**").subscribe();
 				}
 
+				if (playImmediately)
+				{
+					trackScheduler.playImmediately(track);
+				}
+				else
+				{
+					trackScheduler.queue(track);
+				}
 
-				trackScheduler.queue(track);
 			}
 
 			@Override
@@ -208,7 +215,7 @@ public class LavaMusicPlayer
 					// We will arrive here upon youtube search fallbacks,
 					// but we only want to queue the first match in this case
 					AudioTrack audioTrack = playlist.getTracks().get(0);
-					loadTrack(audioTrack.getIdentifier(), channel, isPlaylistRequest);
+					loadTrack(audioTrack.getIdentifier(), channel, isPlaylistRequest, playImmediately);
 				}
 				else
 				{

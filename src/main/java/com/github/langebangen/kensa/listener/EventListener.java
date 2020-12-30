@@ -9,6 +9,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
@@ -163,7 +164,7 @@ public class EventListener
 					/* Radio commands */
 					case PLAY:
 						String playArg = argument.replace("-p ", "");
-						return Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument), member));
+						return Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument), member, false));
 					case SKIP:
 						return Mono.just(new SkipTrackEvent(client, channel, argument));
 					case SONG:
@@ -217,11 +218,19 @@ public class EventListener
 					var currentVoiceChannelId = event.getCurrent().getChannelId().get();
 
 					return dispatcher.on(VoiceStateUpdateEvent.class)
-						.filter(x -> x.getCurrent().getUserId().equals(Snowflake.of("144085745320198154")) &&
-							x.getCurrent().getChannelId()
+						.filter(x -> {
+							var current = x.getCurrent();
+							var old = x.getOld();
+
+							return current.getUserId().equals(Snowflake.of("144085745320198154")) &&
+								current.getChannelId()
 									.map(chId -> chId.equals(currentVoiceChannelId))
-									.orElse(false)
-						)
+									.orElse(false) &&
+								old
+									.flatMap(VoiceState::getChannelId)
+									.map(oldChId -> !oldChId.equals(currentVoiceChannelId))
+									.orElse(true);
+						})
 						.flatMap(x -> Mono.zip(
 								Mono.justOrEmpty(x.getCurrent().getGuildId()),
 								x.getCurrent().getMember()
@@ -232,7 +241,7 @@ public class EventListener
 					var member = tuple.getT2();
 
 					dispatcher.publish(new PlayAudioEvent(client, guildId,
-							"https://cdn.discordapp.com/attachments/209424846260535307/793806645738209310/fredrik.mp3", false, member));
+							"https://cdn.discordapp.com/attachments/209424846260535307/793806645738209310/fredrik.mp3", false, member, true));
 				});
 	}
 

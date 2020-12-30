@@ -1,20 +1,18 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Class for scheduling tracks to the {@link AudioPlayer}.
@@ -27,7 +25,7 @@ public class TrackScheduler
 	private static final Logger logger = LoggerFactory.getLogger(TrackScheduler.class);
 
 	private final AudioPlayer player;
-	private final BlockingQueue<AudioTrack> queue;
+	private final LinkedBlockingDeque<AudioTrack> queue;
 	private boolean loopEnabled;
 
 	/**
@@ -39,7 +37,7 @@ public class TrackScheduler
 	public TrackScheduler(AudioPlayer player)
 	{
 		this.player = player;
-		this.queue = new LinkedBlockingQueue<>();
+		this.queue = new LinkedBlockingDeque<>();
 		this.loopEnabled = false;
 	}
 
@@ -53,6 +51,7 @@ public class TrackScheduler
 	{
 		logger.info("Queuing " + track.getIdentifier());
 
+		track.setUserData(new AudioTrackData(true, false));
 		// Calling startTrack with the noInterrupt set to true will start the track only if nothing is currently playing. If
 		// something is playing, it returns false and does nothing. In that case the audioPlayer was already playing so this
 		// track goes to the queue instead.
@@ -60,6 +59,23 @@ public class TrackScheduler
 		{
 			queue.offer(track);
 		}
+	}
+
+	public void playImmediately(AudioTrack track)
+	{
+		logger.info("Playing immediately " + track.getIdentifier());
+
+		if (player.getPlayingTrack() != null)
+		{
+			if (player.getPlayingTrack().getUserData() != null)
+			{
+				((AudioTrackData) player.getPlayingTrack()
+					.getUserData()).wasAbortedByImmediatePlay = true;
+			}
+		}
+
+		track.setUserData(new AudioTrackData(false, false));
+		player.startTrack(track, false);
 	}
 
 	/**
@@ -87,7 +103,8 @@ public class TrackScheduler
 		// Start the next track, regardless of something is already playing or not. In case queue was empty, we are
 		// giving null to startTrack, which is a valid argument and will simply stop the audioPlayer.
 		AudioTrack trackToPlay = queue.poll();
-		if (trackToPlay != null){
+		if (trackToPlay != null)
+		{
 			player.startTrack(trackToPlay, false);
 		}
 	}
@@ -188,8 +205,30 @@ public class TrackScheduler
 	public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
 	{
 		logger.info("Track ended");
+
+		var isLoopable = true;
+		if (track.getUserData() != null)
+		{
+			var trackData = (AudioTrackData) track.getUserData();
+
+			if (trackData.wasAbortedByImmediatePlay)
+			{
+				// We end up here if an immediately played track replaced an on going track.
+				// Then we want to add the aborted track at the head of the queue again
+				// to be replayed at the position it was aborted at, once the immediately played track are finished.
+				var cloned = track.makeClone();
+				cloned.setPosition(track.getPosition());
+				queue.addFirst(cloned);
+
+				trackData.wasAbortedByImmediatePlay = false;
+				return;
+			}
+
+			isLoopable = trackData.isLoopable;
+		}
+
 		// Add the track again to the end of the queue if loop is enabled
-		if(loopEnabled)
+		if(loopEnabled && isLoopable)
 		{
 			logger.info("Looping enabled, add track to end of queue again.");
 			queue.offer(track.makeClone());
@@ -223,5 +262,18 @@ public class TrackScheduler
 	{
 		player.stopTrack();
 		queue.clear();
+	}
+
+	private static class AudioTrackData
+	{
+		public boolean isLoopable;
+		public boolean wasAbortedByImmediatePlay;
+
+		public AudioTrackData(boolean isLoopable,
+			boolean wasAbortedByImmediatePlay)
+		{
+			this.isLoopable = isLoopable;
+			this.wasAbortedByImmediatePlay = wasAbortedByImmediatePlay;
+		}
 	}
 }
