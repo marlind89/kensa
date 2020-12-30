@@ -212,11 +212,21 @@ public class EventListener
 	private void onMemberJoinsVoiceChannel()
 	{
 		dispatcher.on(VoiceStateUpdateEvent.class)
-				.filter(x -> (x.getOld().isEmpty() || x.getOld().get().getChannelId().isEmpty()) && x.getCurrent().getUserId().equals(Snowflake.of("144085745320198154")))
-				.flatMap(x -> Mono.zip(
-					Mono.justOrEmpty(x.getCurrent().getGuildId()),
-					x.getCurrent().getMember()
-				))
+				.filter(x -> x.getCurrent().getUserId().equals(client.getSelfId()) && x.getCurrent().getChannelId().isPresent())
+				.flatMap(event -> {
+					var currentVoiceChannelId = event.getCurrent().getChannelId().get();
+
+					return dispatcher.on(VoiceStateUpdateEvent.class)
+						.filter(x -> x.getCurrent().getUserId().equals(Snowflake.of("144085745320198154")) &&
+							x.getCurrent().getChannelId()
+									.map(chId -> chId.equals(currentVoiceChannelId))
+									.orElse(false)
+						)
+						.flatMap(x -> Mono.zip(
+								Mono.justOrEmpty(x.getCurrent().getGuildId()),
+								x.getCurrent().getMember()
+						));
+				})
 				.subscribe(tuple -> {
 					var guildId = tuple.getT1();
 					var member = tuple.getT2();
