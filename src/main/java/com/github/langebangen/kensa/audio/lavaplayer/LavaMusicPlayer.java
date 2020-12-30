@@ -1,11 +1,5 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.TextChannel;
-
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
@@ -17,12 +11,13 @@ import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.sedmelluq.discord.lavaplayer.track.AudioItem;
-import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.*;
 import com.wrapper.spotify.SpotifyApi;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.TextChannel;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Implementation of {@link MusicPlayer} using the lava player library
@@ -197,7 +192,10 @@ public class LavaMusicPlayer
 			{
 				String readableTrack = TrackUtils.getReadableTrack(track);
 
-				channel.createMessage("Queued **" + readableTrack + "**").subscribe();
+				if (channel != null){
+					channel.createMessage("Queued **" + readableTrack + "**").subscribe();
+				}
+
 
 				trackScheduler.queue(track);
 			}
@@ -214,9 +212,12 @@ public class LavaMusicPlayer
 				}
 				else
 				{
-					channel.createMessage("Queued **" + playlist.getName()
-						+ " [" + playlist.getTracks().size() + " songs]**")
-						.subscribe();
+					if (channel != null){
+						channel.createMessage("Queued **" + playlist.getName()
+								+ " [" + playlist.getTracks().size() + " songs]**")
+								.subscribe();
+					}
+
 
 					trackScheduler.queue(playlist);
 				}
@@ -232,14 +233,18 @@ public class LavaMusicPlayer
 				}
 				else
 				{
-					channel.createMessage("Nope couldn't find that..").subscribe();
+					if (channel != null){
+						channel.createMessage("Nope couldn't find that..").subscribe();
+					}
 				}
 			}
 
 			@Override
 			public void loadFailed(FriendlyException exception)
 			{
-				channel.createMessage(exception.getMessage()).subscribe();
+				if (channel != null){
+					channel.createMessage(exception.getMessage()).subscribe();
+				}
 			}
 		});
 	}

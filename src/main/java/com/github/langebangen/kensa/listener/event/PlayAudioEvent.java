@@ -1,5 +1,6 @@
 package com.github.langebangen.kensa.listener.event;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.TextChannel;
@@ -22,6 +23,15 @@ public class PlayAudioEvent extends KensaRadioEvent
 		this.member = member;
 	}
 
+	public PlayAudioEvent(GatewayDiscordClient client, Snowflake guildId,
+		 String identifier, boolean isPlaylistRequest, Member member)
+	{
+		super(client, null);
+		this.url = identifier;
+		this.isPlaylistRequest = isPlaylistRequest;
+		this.member = member;
+		setGuildId(guildId);
+	}
 	/**
 	 * Gets the song identity requested
 	 *

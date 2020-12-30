@@ -1,14 +1,5 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.Activity;
-import discord4j.core.object.presence.Presence;
-
 import com.github.langebangen.kensa.audio.MusicPlayer;
 import com.github.langebangen.kensa.listener.event.KensaEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
@@ -22,6 +13,14 @@ import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.SpotifyApi;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.presence.Activity;
+import discord4j.core.object.presence.Presence;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Factory for creating {@link MusicPlayer}s
@@ -67,7 +66,7 @@ public class MusicPlayerManager
 	 */
 	public Optional<MusicPlayer> getMusicPlayer(KensaEvent event)
 	{
-		return getMusicPlayer(event.getTextChannel().getGuildId());
+		return getMusicPlayer(event.getGuildId());
 	}
 
 	public void putMusicPlayer(Snowflake guildId, AudioPlayer audioPlayer){

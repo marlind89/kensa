@@ -1,54 +1,33 @@
 package com.github.langebangen.kensa.listener;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Random;
-
-import javax.inject.Named;
-
+import com.github.langebangen.kensa.audio.VoiceConnections;
+import com.github.langebangen.kensa.command.Command;
+import com.github.langebangen.kensa.listener.event.*;
+import com.google.inject.Inject;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
-import discord4j.core.event.domain.lifecycle.ReconnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.VoiceChannel;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import rita.RiMarkov;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import rita.RiMarkov;
 
-import com.github.langebangen.kensa.audio.VoiceConnections;
-import com.github.langebangen.kensa.command.Command;
-import com.github.langebangen.kensa.listener.event.BabylonEvent;
-import com.github.langebangen.kensa.listener.event.ClearPlaylistEvent;
-import com.github.langebangen.kensa.listener.event.CurrentTrackRequestEvent;
-import com.github.langebangen.kensa.listener.event.HelpEvent;
-import com.github.langebangen.kensa.listener.event.InsultEvent;
-import com.github.langebangen.kensa.listener.event.InsultPersistEvent;
-import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
-import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
-import com.github.langebangen.kensa.listener.event.LoopPlaylistEvent;
-import com.github.langebangen.kensa.listener.event.PauseEvent;
-import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
-import com.github.langebangen.kensa.listener.event.ReconnectVoiceChannelEvent;
-import com.github.langebangen.kensa.listener.event.RestartKensaEvent;
-import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
-import com.github.langebangen.kensa.listener.event.ShowPlaylistEvent;
-import com.github.langebangen.kensa.listener.event.ShufflePlaylistEvent;
-import com.github.langebangen.kensa.listener.event.SkipTrackEvent;
-import com.google.inject.Inject;
+import javax.inject.Named;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * EventListener which listens on events from discord.
@@ -83,6 +62,7 @@ public class EventListener
 		onReady();
 		onMessageReceivedEvent();
 		onReconnectEvent();
+		onMemberJoinsVoiceChannel();
 	}
 
 	/**
@@ -212,6 +192,7 @@ public class EventListener
 
 	private void onReconnectEvent()
 	{
+		/*
 		Flux<GatewayDiscordClient> reconnectEvent = dispatcher.on(ReconnectEvent.class)
 			.doOnNext(e -> logger.info("Received reconnect event")).map(Event::getClient);
 
@@ -225,6 +206,24 @@ public class EventListener
 			.flatMap(VoiceState::getChannel)
 			.flatMap(vc -> voiceConnections.reconnect(vc, false))
 			.subscribe();
+		*/
+	}
+
+	private void onMemberJoinsVoiceChannel()
+	{
+		dispatcher.on(VoiceStateUpdateEvent.class)
+				.filter(x -> (x.getOld().isEmpty() || x.getOld().get().getChannelId().isEmpty()) && x.getCurrent().getUserId().equals(Snowflake.of("144085745320198154")))
+				.flatMap(x -> Mono.zip(
+					Mono.justOrEmpty(x.getCurrent().getGuildId()),
+					x.getCurrent().getMember()
+				))
+				.subscribe(tuple -> {
+					var guildId = tuple.getT1();
+					var member = tuple.getT2();
+
+					dispatcher.publish(new PlayAudioEvent(client, guildId,
+							"https://cdn.discordapp.com/attachments/209424846260535307/793806645738209310/fredrik.mp3", false, member));
+				});
 	}
 
 	/**
