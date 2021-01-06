@@ -27,6 +27,7 @@ import javax.inject.Named;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -214,7 +215,7 @@ public class EventListener
 	{
 		dispatcher.on(VoiceStateUpdateEvent.class)
 				.filter(x -> x.getCurrent().getUserId().equals(client.getSelfId()) && x.getCurrent().getChannelId().isPresent())
-				.flatMap(event -> {
+				.switchMap(event -> {
 					var currentVoiceChannelId = event.getCurrent().getChannelId().get();
 
 					return dispatcher.on(VoiceStateUpdateEvent.class)
@@ -236,12 +237,22 @@ public class EventListener
 								x.getCurrent().getMember()
 						));
 				})
+				.delayElements(Duration.ofMillis(500))
 				.subscribe(tuple -> {
 					var guildId = tuple.getT1();
 					var member = tuple.getT2();
 
+					var rand = random.nextInt(3);
+					String soundFile = switch (rand)
+					{
+						case 0 -> "fredrik.mp3";
+						case 1 -> "fredrik2.mp3";
+						case 2 -> "hjalp.mp3";
+						default -> throw new IllegalStateException("Unexpected value: " + rand);
+					};
+
 					dispatcher.publish(new PlayAudioEvent(client, guildId,
-							"https://cdn.discordapp.com/attachments/209424846260535307/793806645738209310/fredrik.mp3", false, member, true));
+						soundFile, false, member, true));
 				});
 	}
 
