@@ -1,16 +1,15 @@
 package com.github.langebangen.kensa.listener;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.VoiceState;
-import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.channel.VoiceChannel;
-import reactor.core.publisher.Mono;
-
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.listener.event.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.LeaveVoiceChannelEvent;
 import com.github.langebangen.kensa.listener.event.ReconnectVoiceChannelEvent;
 import com.google.inject.Inject;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.VoiceState;
+import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.channel.VoiceChannel;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Martin.
@@ -49,7 +48,8 @@ public class VoiceChannelListener
 					else
 					{
 						vcToJoin = guild.getChannels().ofType(VoiceChannel.class)
-							.filter(channel -> channel.getName().equals(event.getVoiceChannelNameToJoin()))
+							.filter(channel -> channel.getName().trim().equalsIgnoreCase(
+								event.getVoiceChannelNameToJoin().trim()))
 							.singleOrEmpty();
 					}
 
