@@ -103,10 +103,7 @@ public class TrackScheduler
 		// Start the next track, regardless of something is already playing or not. In case queue was empty, we are
 		// giving null to startTrack, which is a valid argument and will simply stop the audioPlayer.
 		AudioTrack trackToPlay = queue.poll();
-		if (trackToPlay != null)
-		{
-			player.startTrack(trackToPlay, false);
-		}
+		player.startTrack(trackToPlay, false);
 	}
 
 	/**
