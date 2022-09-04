@@ -34,7 +34,7 @@ public enum Action
 	RECONNECT ("reconnect", "Reconnects to the current voice channel. Useful if Kensa can't play music."),
 	RESTART   ("restart", "Restarts kensa", KensaRole.ADMIN);
 
-	private final String action;
+	private final String command;
 	private final String description;
 	private final KensaRole requiresRole;
 
@@ -45,11 +45,16 @@ public enum Action
 
 	Action(String command, String description, KensaRole requiresRole)
 	{
-		this.action = "!" + command;
+		this.command = command;
 		this.description = description;
 		this.requiresRole = requiresRole;
 	}
 
+	public String getCommand()
+	{
+		return command;
+	}
+	
 	/**
 	 * Gets the action
 	 *
@@ -57,7 +62,7 @@ public enum Action
 	 */
 	public String getAction()
 	{
-		return action;
+		return "!" + command;
 	}
 
 	/**
@@ -84,7 +89,7 @@ public enum Action
 	{
 		for(Action command : values())
 		{
-			if(command.action.equalsIgnoreCase(actionValue))
+			if(command.getAction().equalsIgnoreCase(actionValue))
 			{
 				return command;
 			}

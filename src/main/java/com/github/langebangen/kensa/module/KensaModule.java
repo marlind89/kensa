@@ -1,6 +1,7 @@
 package com.github.langebangen.kensa.module;
 
 import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
+import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.config.DatabaseConfig;
 import com.github.langebangen.kensa.config.DiscordConfig;
 import com.github.langebangen.kensa.config.SpotifyApiConfig;
@@ -16,6 +17,9 @@ import com.wrapper.spotify.requests.authorization.client_credentials.ClientCrede
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.request.RouteMatcher;
@@ -30,6 +34,8 @@ import rita.RiMarkov;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -102,12 +108,41 @@ public class KensaModule
 
 	@Provides
 	@Singleton
-	public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client){
-		return client
+	public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client, List<ApplicationCommandRequest> requests){
+		var gatewayDiscordClient = client
 				.gateway()
 				.setEnabledIntents(IntentSet.all())
 				.login()
 				.block();
+
+		var restClient =gatewayDiscordClient.getRestClient();
+
+		gatewayDiscordClient.getGuilds()
+			.flatMap(guild -> restClient.getApplicationId().cache()
+				.flatMapMany(id -> restClient.getApplicationService()
+					.bulkOverwriteGuildApplicationCommand(id, guild.getId().asLong(), requests)))
+			.blockLast();
+
+		return gatewayDiscordClient;
+	}
+
+	@Provides
+	@Singleton
+	public List<ApplicationCommandRequest> provideCommandRequests()
+	{
+		var requests = new LinkedList<ApplicationCommandRequest>();
+		requests.add(ApplicationCommandRequest.builder()
+				.name(Action.JOIN.getCommand())
+				.description(Action.JOIN.getDescription())
+				.addOption(ApplicationCommandOptionData.builder()
+					.name("channel")
+					.description("The channel to join")
+					.type(ApplicationCommandOption.Type.CHANNEL.getValue())
+					.required(false)
+					.build())
+				.build()
+		);
+		return requests;
 	}
 
 	@Provides
