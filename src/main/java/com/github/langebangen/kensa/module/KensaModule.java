@@ -1,26 +1,5 @@
 package com.github.langebangen.kensa.module;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.rest.http.client.ClientException;
-import discord4j.rest.request.RouteMatcher;
-import discord4j.rest.response.ResponseFunction;
-import discord4j.rest.route.Routes;
-import reactor.retry.Retry;
-import rita.RiMarkov;
-
-import org.cfg4j.provider.ConfigurationProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
 import com.github.langebangen.kensa.config.DatabaseConfig;
 import com.github.langebangen.kensa.config.DiscordConfig;
@@ -34,6 +13,26 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
+import discord4j.core.DiscordClient;
+import discord4j.core.DiscordClientBuilder;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.gateway.intent.IntentSet;
+import discord4j.rest.http.client.ClientException;
+import discord4j.rest.request.RouteMatcher;
+import discord4j.rest.response.ResponseFunction;
+import discord4j.rest.route.Routes;
+import org.cfg4j.provider.ConfigurationProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.retry.Retry;
+import rita.RiMarkov;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Martin.
@@ -104,7 +103,11 @@ public class KensaModule
 	@Provides
 	@Singleton
 	public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client){
-		return client.login().block();
+		return client
+				.gateway()
+				.setEnabledIntents(IntentSet.all())
+				.login()
+				.block();
 	}
 
 	@Provides

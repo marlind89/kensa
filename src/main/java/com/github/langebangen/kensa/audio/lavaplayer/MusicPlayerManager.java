@@ -15,8 +15,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.SpotifyApi;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.presence.Activity;
-import discord4j.core.object.presence.Presence;
+import discord4j.core.object.presence.ClientActivity;
+import discord4j.core.object.presence.ClientPresence;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -121,7 +121,7 @@ public class MusicPlayerManager
 		{
 			super.onTrackStart(player, track);
 
-			client.updatePresence(Presence.online(Activity.playing(TrackUtils.getReadableTrack(track))))
+			client.updatePresence(ClientPresence.online(ClientActivity.playing(TrackUtils.getReadableTrack(track))))
 				.subscribe();
 		}
 
@@ -130,7 +130,7 @@ public class MusicPlayerManager
 		{
 			if(!hasNextTrack())
 			{
-				client.updatePresence(Presence.online())
+				client.updatePresence(ClientPresence.online())
 					.subscribe();
 			}
 			super.onTrackEnd(player, track, endReason);
