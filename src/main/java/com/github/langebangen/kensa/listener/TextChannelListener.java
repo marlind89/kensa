@@ -1,6 +1,25 @@
 package com.github.langebangen.kensa.listener;
 
-import static com.github.langebangen.kensa.storage.generated.Tables.INSULT;
+import com.github.langebangen.kensa.audio.VoiceChannelConnection;
+import com.github.langebangen.kensa.audio.VoiceConnections;
+import com.github.langebangen.kensa.babylon.Babylon;
+import com.github.langebangen.kensa.command.Action;
+import com.github.langebangen.kensa.listener.event.*;
+import com.github.langebangen.kensa.storage.Storage;
+import com.github.langebangen.kensa.storage.generated.tables.records.InsultRecord;
+import com.github.langebangen.kensa.util.KensaConstants;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
+import rita.RiMarkov;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -10,32 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import reactor.core.publisher.Mono;
-import rita.RiMarkov;
-
-import org.jooq.DSLContext;
-import org.jooq.Record;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.langebangen.kensa.audio.VoiceChannelConnection;
-import com.github.langebangen.kensa.audio.VoiceConnections;
-import com.github.langebangen.kensa.babylon.Babylon;
-import com.github.langebangen.kensa.command.Action;
-import com.github.langebangen.kensa.listener.event.BabylonEvent;
-import com.github.langebangen.kensa.listener.event.HelpEvent;
-import com.github.langebangen.kensa.listener.event.InsultEvent;
-import com.github.langebangen.kensa.listener.event.InsultPersistEvent;
-import com.github.langebangen.kensa.listener.event.RestartKensaEvent;
-import com.github.langebangen.kensa.storage.Storage;
-import com.github.langebangen.kensa.storage.generated.tables.records.InsultRecord;
-import com.github.langebangen.kensa.util.KensaConstants;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import static com.github.langebangen.kensa.storage.generated.Tables.INSULT;
 
 
 /**
@@ -135,7 +129,7 @@ public class TextChannelListener
 						}
 					}
 				}
-				catch(SQLException e)
+				catch(Exception e)
 				{
 					logger.error("Error when fetching insult from storage.", e);
 				}
