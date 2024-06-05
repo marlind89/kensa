@@ -4,6 +4,7 @@ import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.VoiceStateUpdateEvent;
@@ -23,7 +24,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rita.RiMarkov;
 
-import javax.inject.Named;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -281,7 +281,7 @@ public class EventListener
 		if(!urlFreeMessage.isEmpty())
 		{
 			urlFreeMessage = formatSentence(urlFreeMessage);
-			markov.loadText(urlFreeMessage);
+			markov.addText(urlFreeMessage);
 			try(FileWriter writer = new FileWriter(messageFile, true))
 			{
 				writer.write(urlFreeMessage);

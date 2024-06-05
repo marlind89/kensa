@@ -1,30 +1,29 @@
 package com.github.langebangen.kensa.youtube;
 
+import com.github.langebangen.kensa.config.YoutubeConfig;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.SearchResultSnippet;
+import com.google.inject.Inject;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.langebangen.kensa.config.YoutubeConfig;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.SearchResultSnippet;
-import com.google.inject.Inject;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-
 public class YoutubeApiService
 {
 	private static final Logger logger = LoggerFactory.getLogger(YoutubeApiService.class);
 
 	private static final String APPLICATION_NAME = "Kensa";
-	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
 	private final YouTube apiService;
 	private final YoutubeConfig config;
@@ -46,7 +45,7 @@ public class YoutubeApiService
 		try
 		{
 			YouTube.Search.List request = apiService.search()
-				.list("snippet");
+				.list(List.of("snippet"));
 
 			String apiKey = config.apiKey();
 			return request.setKey(apiKey)
@@ -54,7 +53,7 @@ public class YoutubeApiService
 				.setOrder("viewCount")
 				.setQ(query)
 				.setSafeSearch("none")
-				.setType("playlist")
+				.setType(List.of("playlist"))
 				.execute()
 				.getItems()
 				.stream()

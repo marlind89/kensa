@@ -8,15 +8,15 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import com.wrapper.spotify.SpotifyApi;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import java.util.HashMap;
 import java.util.Map;

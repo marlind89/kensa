@@ -9,10 +9,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
@@ -21,11 +17,16 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
+import org.apache.hc.core5.http.ParseException;
 import org.cfg4j.provider.ConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.retry.Retry;
 import rita.RiMarkov;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
+import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +77,7 @@ public class KensaModule
 		RiMarkov markov = new RiMarkov(3);
 		if(new File("messages.txt").isFile())
 		{
-			markov.loadFrom("messages.txt");
+			//markov.loadFrom("messages.txt");
 		}
 		return markov;
 	}
@@ -92,8 +93,8 @@ public class KensaModule
 			.onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
 			// server error (500) while creating a message will be retried, with backoff, until it succeeds
 			.onClientResponse(ResponseFunction.retryWhen(RouteMatcher.route(Routes.MESSAGE_CREATE),
-				Retry.onlyIf(ClientException.isRetryContextStatusCode(500))
-					.exponentialBackoffWithJitter(Duration.ofSeconds(2), Duration.ofSeconds(10))))
+					Retry.onlyIf(ClientException.isRetryContextStatusCode(500))
+							.exponentialBackoffWithJitter(Duration.ofSeconds(2), Duration.ofSeconds(10))))
 			// wait 1 second and retry any server error (500)
 			.onClientResponse(ResponseFunction.retryOnceOnErrorStatus(500))
 			.build();
@@ -135,7 +136,7 @@ public class KensaModule
 						cc.getExpiresIn() - 60*2)), TimeUnit.SECONDS);
 					logger.info("Renewed Spotify access token");
 				}
-				catch(IOException | SpotifyWebApiException e)
+				catch(IOException | SpotifyWebApiException | ParseException e)
 				{
 					logger.error("Failed to retrieve access token from Spotify", e);
 				}

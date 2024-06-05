@@ -5,12 +5,13 @@ import com.google.inject.Inject;
 import com.neovisionaries.i18n.CountryCode;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.*;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.specification.*;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import org.apache.hc.core5.http.ParseException;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.specification.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -61,12 +62,13 @@ public class SpotifySourceManager
 					.market(CountryCode.SE)
 					.build()
 					.execute();
+
 			List<AudioTrack> audioTracks = new LinkedList<>();
 			int total = Integer.MAX_VALUE;
 			int offset = 0;
 			while (total > offset)
 			{
-				Paging<PlaylistTrack> playlistTracks = spotifyApi.getPlaylistsTracks(playlistId)
+				Paging<PlaylistTrack> playlistTracks = spotifyApi.getPlaylistsItems(playlistId)
 						.market(CountryCode.SE)
 						.limit(100)
 						.offset(offset)
@@ -78,10 +80,12 @@ public class SpotifySourceManager
 				audioTracks.addAll(Arrays.stream(playlistTracks.getItems())
 						.map(playlistTrack ->
 						{
-							Track track = playlistTrack.getTrack();
+							var track = playlistTrack.getTrack();
 
-							ArtistSimplified[] artists = track.getArtists();
-							String firstArtistName = artists.length == 0 ? "" : artists[0].getName();
+							ArtistSimplified[] artists = track instanceof Track t
+									? t.getArtists()
+									: new ArtistSimplified[0];
+							var firstArtistName = artists.length == 0 ? "" : artists[0].getName();
 
 							return new YoutubeBestMatchAudioTrack(new AudioTrackInfo(firstArtistName + " - " + track.getName(), firstArtistName,
 									track.getDurationMs(), "", false, ""),
@@ -94,7 +98,7 @@ public class SpotifySourceManager
 
 			return new BasicAudioPlaylist(playlist.getName() + " by " + playlist.getOwner().getDisplayName(), audioTracks, null, false);
 		}
-		catch(IOException | SpotifyWebApiException e)
+		catch(IOException | SpotifyWebApiException | ParseException e)
 		{
 			e.printStackTrace();
 		}

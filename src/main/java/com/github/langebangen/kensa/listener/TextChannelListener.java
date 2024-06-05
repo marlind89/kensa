@@ -13,7 +13,6 @@ import com.google.inject.Singleton;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import org.jooq.DSLContext;
-import org.jooq.Record;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
@@ -26,8 +25,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import static com.github.langebangen.kensa.storage.generated.Tables.INSULT;
 
@@ -100,7 +97,7 @@ public class TextChannelListener
 				.map(guild -> guild.getClient().getSelfId())
 				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId))
 				.flatMap(botId -> event.getMessage().getChannel())
-				.flatMap(channel -> channel.createMessage(markov.generateSentence()))
+				.flatMap(channel -> channel.createMessage(markov.generate()[0]))
 			)
 			.subscribe(null, e -> logger.error("Failed on mention event", e));
 	}
@@ -111,16 +108,16 @@ public class TextChannelListener
 			.flatMap(event -> {
 				try(Connection conn = storage.getConnection())
 					{
-					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
-					try(Stream<Record> stream = create.select()
+					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
+					try(var stream = create.select()
 						.from(INSULT)
 						.orderBy(DSL.rand())
 						.stream())
 					{
-						Optional<Record> first = stream.findFirst();
+						var first = stream.findFirst();
 						if(first.isPresent())
 						{
-							Record record = first.get();
+							var record = first.get();
 							String text = record.getValue(INSULT.TEXT);
 							lastInsultId = record.getValue(INSULT.ID);
 
@@ -149,9 +146,9 @@ public class TextChannelListener
 						.createMessage("No previous insult to remove!");
 				}
 
-				try(Connection conn = storage.getConnection())
+				try(var conn = storage.getConnection())
 				{
-					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES_9_5);
+					DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
 					if(event.isAdded())
 					{
 						String insult = event.getInsult();
