@@ -1,22 +1,7 @@
 package com.github.langebangen.kensa;
 
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-
-import discord4j.core.GatewayDiscordClient;
-import reactor.core.publisher.Hooks;
-
-import org.cfg4j.provider.ConfigurationProvider;
-import org.cfg4j.provider.ConfigurationProviderBuilder;
-import org.cfg4j.source.ConfigurationSource;
-import org.cfg4j.source.context.filesprovider.ConfigFilesProvider;
-import org.cfg4j.source.files.FilesConfigurationSource;
-import org.cfg4j.source.reload.strategy.PeriodicalReloadStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.github.langebangen.kensa.job.GuiceJobFactory;
+import com.github.langebangen.kensa.job.UpdateMessagesOnDiskJob;
 import com.github.langebangen.kensa.listener.EventListener;
 import com.github.langebangen.kensa.listener.RadioListener;
 import com.github.langebangen.kensa.listener.TextChannelListener;
@@ -24,6 +9,27 @@ import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import com.github.langebangen.kensa.module.KensaModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import discord4j.core.GatewayDiscordClient;
+import org.cfg4j.provider.ConfigurationProvider;
+import org.cfg4j.provider.ConfigurationProviderBuilder;
+import org.cfg4j.source.ConfigurationSource;
+import org.cfg4j.source.context.filesprovider.ConfigFilesProvider;
+import org.cfg4j.source.files.FilesConfigurationSource;
+import org.cfg4j.source.reload.strategy.PeriodicalReloadStrategy;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.JobBuilder;
+import org.quartz.SchedulerException;
+import org.quartz.TriggerBuilder;
+import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Hooks;
+
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main class for Kensa.
@@ -70,6 +76,7 @@ public class KensaApp
 			GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
 
 			registerListeners(injector);
+			initializeScheduler(injector);
 
 			Runtime.getRuntime().addShutdownHook(new Thread(
 				() -> gateway.logout().block(Duration.ofSeconds(10)))
@@ -81,6 +88,33 @@ public class KensaApp
 			System.out.println(e);
 		}
 
+	}
+
+	private static void initializeScheduler(Injector injector)
+		throws SchedulerException
+    {
+		var factory = new StdSchedulerFactory();
+		var scheduler = factory.getScheduler();
+
+		scheduler.setJobFactory(new GuiceJobFactory(injector));
+
+		var job = JobBuilder.newJob(UpdateMessagesOnDiskJob.class)
+				.withIdentity("updateMessagesOnDiskJob", "group1")
+				.build();
+
+		var immediateTrigger = TriggerBuilder.newTrigger()
+				.withIdentity("immediateTrigger", "group1")
+				.startNow()
+				.build();
+
+		var dailyTrigger = TriggerBuilder.newTrigger()
+				.withIdentity("dailyTrigger", "group1")
+				.withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(4, 0))
+				.build();
+
+		scheduler.scheduleJob(job, Set.of(immediateTrigger, dailyTrigger), true);
+
+		scheduler.start();
 	}
 
 	private static void registerListeners(Injector injector)

@@ -3,3 +3,11 @@
 
 target
 kensa.log
+kensa*.log
+
+todo.txt
+messages.txt
+deploy.sh
+*.pyc
+message-model.json
+*.versionsBackup

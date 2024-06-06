@@ -3,6 +3,7 @@ package com.github.langebangen.kensa.listener;
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.listener.event.*;
+import com.github.langebangen.kensa.storage.Storage;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import discord4j.common.util.Snowflake;
@@ -14,22 +15,28 @@ import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.VoiceChannel;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import rita.RiMarkov;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Random;
+
+import static com.github.langebangen.kensa.storage.generated.Tables.MESSAGE;
 
 /**
  * EventListener which listens on events from discord.
@@ -44,22 +51,22 @@ public class EventListener
 	private static final String PUNCTUATIONS = ".!?";
 	private final File messageFile;
 	private final Random random;
-	private final RiMarkov markov;
 	private final VoiceConnections voiceConnections;
+	private final Storage storage;
 	private long latestVoiceChannelId;
 
 	@Inject
 	public EventListener(GatewayDiscordClient client,
-		RiMarkov markov,
 		VoiceConnections voiceConnections,
+		Storage storage,
 		@Named("latestVoiceChannelId") long latestVoiceChannelId)
 	{
 		super(client);
 		this.voiceConnections = voiceConnections;
+		this.storage = storage;
 		this.latestVoiceChannelId = latestVoiceChannelId;
 		this.random = new Random();
 		this.messageFile = new File("messages.txt");
-		this.markov = markov;
 
 		onReady();
 		onMessageReceivedEvent();
@@ -98,7 +105,7 @@ public class EventListener
 		messageFlux
 			.filterWhen(event -> event.getAuthorAsMember().map(member -> !member.isBot()))
 			.filter(message -> Command.parseCommand(message.getContent()) == null)
-			.doOnNext(message -> logMessage(message.getContent()))
+			.doOnNext(message -> logMessage(message))
 			.filter(message -> (random.nextFloat() * 100) > 99)
 			.flatMap(message -> message.getChannel()
 				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent())))
@@ -257,17 +264,16 @@ public class EventListener
 	}
 
 	/**
-	 * Logs the message to the message file.
-	 * Will also update {@link RiMarkov} with the
-	 * message.
+	 * Logs the message to db, used for generating random sentences.
 	 *
 	 * @param message
 	 *      the message
 	 */
-	private void logMessage(String message)
+	private void logMessage(Message message)
 	{
+		var content = message.getContent();
 		StringBuilder sb = new StringBuilder();
-		for(String word : message.split(" "))
+		for(String word : content.split(" "))
 		{
 			if(!UrlValidator.getInstance().isValid(word)
 					&& !word.matches("<@!*\\d+>"))
@@ -281,14 +287,22 @@ public class EventListener
 		if(!urlFreeMessage.isEmpty())
 		{
 			urlFreeMessage = formatSentence(urlFreeMessage);
-			markov.addText(urlFreeMessage);
-			try(FileWriter writer = new FileWriter(messageFile, true))
+
+			try(var conn = storage.getConnection())
 			{
-				writer.write(urlFreeMessage);
+				DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
+				var messageRecord = create.newRecord(MESSAGE);
+				messageRecord.setText(urlFreeMessage);
+
+				var zoneId = ZoneId.systemDefault();
+				var utcOffset = ZonedDateTime.now(zoneId).getOffset();
+				messageRecord.setSentAt(message.getTimestamp().atOffset(utcOffset));
+				messageRecord.setAuthor(message.getAuthor().map(User::getUsername).orElse("??"));
+				messageRecord.store();
 			}
-			catch(IOException e)
+			catch(SQLException e)
 			{
-				logger.error("Error writing message to messages file.", e);
+				logger.error("Error writing content to messages file.", e);
 			}
 		}
 	}

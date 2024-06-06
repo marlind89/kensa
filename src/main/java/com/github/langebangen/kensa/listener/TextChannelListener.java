@@ -5,6 +5,7 @@ import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.command.Action;
 import com.github.langebangen.kensa.listener.event.*;
+import com.github.langebangen.kensa.sentence.SentenceGenerator;
 import com.github.langebangen.kensa.storage.Storage;
 import com.github.langebangen.kensa.storage.generated.tables.records.InsultRecord;
 import com.github.langebangen.kensa.util.KensaConstants;
@@ -18,7 +19,6 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
-import rita.RiMarkov;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -38,25 +38,26 @@ public class TextChannelListener
 {
 	private static final Logger logger = LoggerFactory.getLogger(TextChannelListener.class);
 
-	private final RiMarkov markov;
 	private final Babylon babylon;
 	private final Storage storage;
 	private final VoiceConnections voiceConnections;
+    private final SentenceGenerator sentenceGenerator;
 
-	private int lastInsultId;
+    private int lastInsultId;
 
 	@Inject
 	public TextChannelListener(GatewayDiscordClient client,
-		RiMarkov markov, Babylon babylon, Storage storage,
-		VoiceConnections voiceConnections)
+		Babylon babylon, Storage storage,
+		VoiceConnections voiceConnections,
+        SentenceGenerator sentenceGenerator)
 	{
 		super(client);
 
-		this.markov = markov;
 		this.babylon = babylon;
 		this.storage = storage;
 		this.voiceConnections = voiceConnections;
-		this.lastInsultId = -1;
+        this.sentenceGenerator = sentenceGenerator;
+        this.lastInsultId = -1;
 
 		onHelpEvent();
 		onBabylonEvent();
@@ -97,9 +98,13 @@ public class TextChannelListener
 				.map(guild -> guild.getClient().getSelfId())
 				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId))
 				.flatMap(botId -> event.getMessage().getChannel())
-				.flatMap(channel -> channel.createMessage(markov.generate()[0]))
+				.flatMap(channel -> Mono.fromFuture(sentenceGenerator.generateSentence().exceptionally(c -> ""))
+					.flatMap(sentence -> sentence.isEmpty()
+						? Mono.empty()
+						: channel.createMessage(sentence))
+				)
 			)
-			.subscribe(null, e -> logger.error("Failed on mention event", e));
+			.subscribe();
 	}
 
 	private void onInsultEvent()

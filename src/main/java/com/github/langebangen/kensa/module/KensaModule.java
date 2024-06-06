@@ -1,10 +1,8 @@
 package com.github.langebangen.kensa.module;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
-import com.github.langebangen.kensa.config.DatabaseConfig;
-import com.github.langebangen.kensa.config.DiscordConfig;
-import com.github.langebangen.kensa.config.SpotifyApiConfig;
-import com.github.langebangen.kensa.config.YoutubeConfig;
+import com.github.langebangen.kensa.config.*;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -22,19 +20,17 @@ import org.cfg4j.provider.ConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.retry.Retry;
-import rita.RiMarkov;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 /**
  * @author Martin.
  */
@@ -67,19 +63,8 @@ public class KensaModule
 			.bind("discord", DiscordConfig.class));
 		bind(YoutubeConfig.class).toInstance(configProvider
 			.bind("youtube", YoutubeConfig.class));
-	}
-
-
-	@Provides
-	@Singleton
-	public RiMarkov provideMarkov()
-	{
-		RiMarkov markov = new RiMarkov(3);
-		if(new File("messages.txt").isFile())
-		{
-			//markov.loadFrom("messages.txt");
-		}
-		return markov;
+		bind(SentenceGeneratorConfig.class).toInstance(configProvider
+			.bind("sentenceGenerator", SentenceGeneratorConfig.class));
 	}
 
 	@Provides
@@ -145,5 +130,17 @@ public class KensaModule
 		getAccessTokenRunnable.run();
 
 		return spotifyApi;
+	}
+
+	@Provides
+	public HttpClient provideHttpClient()
+	{
+		return HttpClient.newHttpClient();
+	}
+
+	@Provides
+	public ObjectMapper provideObjectMapper()
+	{
+		return new ObjectMapper();
 	}
 }
