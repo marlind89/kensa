@@ -79,6 +79,7 @@ public class TextChannelListener
 					spec.addField(action.getAction(), action.getDescription(), false);
 				}
 			}))
+			.retry()
 			.subscribe();
 	}
 
@@ -88,6 +89,7 @@ public class TextChannelListener
 		dispatcher.on(BabylonEvent.class)
 			.flatMap(event -> event.getTextChannel()
 				.createMessage("```" + babylon.getRandomDish() + "```"))
+			.retry()
 			.subscribe();
 	}
 
@@ -104,6 +106,7 @@ public class TextChannelListener
 						: channel.createMessage(sentence))
 				)
 			)
+			.retry()
 			.subscribe();
 	}
 
@@ -137,6 +140,7 @@ public class TextChannelListener
 				}
 				return Mono.empty();
 			})
+			.retry()
 			.subscribe();
 	}
 
@@ -180,6 +184,7 @@ public class TextChannelListener
 				}
 				return Mono.empty();
 			})
+			.retry()
 			.subscribe();
 	}
 
@@ -221,6 +226,7 @@ public class TextChannelListener
 					logger.error("Failed to restart Kensa!" , e);
 				}
 			})
+			.retry()
 			.subscribe();
 	}
 }

@@ -65,6 +65,7 @@ public class VoiceChannelListener
 					}
 				})
 			)
+			.retry()
 			.subscribe();
 	}
 
@@ -82,6 +83,7 @@ public class VoiceChannelListener
 			.flatMap(Member::getVoiceState)
 			.flatMap(VoiceState::getChannel)
 			.flatMap(vc -> voiceConnections.reconnect(vc, true))
+			.retry()
 			.subscribe();
 	}
 }

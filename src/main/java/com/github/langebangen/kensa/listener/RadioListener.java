@@ -107,6 +107,7 @@ public class RadioListener
 						: "none") + "**");
 				});
 			})
+			.retry()
 			.subscribe();
 	}
 
@@ -134,6 +135,7 @@ public class RadioListener
 					}
 				}).orElse(Mono.empty());
 			})
+			.retry()
 			.subscribe();
 
 	}
@@ -147,8 +149,9 @@ public class RadioListener
 
 					return (Mono<Message>) event.getTextChannel().createMessage("Playlist shuffled!");
 				})
-				.orElse(Mono.empty())
-			).subscribe();
+				.orElse(Mono.empty()))
+			.retry()
+			.subscribe();
 
 	}
 
@@ -199,8 +202,9 @@ public class RadioListener
 					return channel.createMessage(message.substring(0, Math.min(message.length(), Message.MAX_CONTENT_LENGTH - 4)) + "```")
 						.flatMap(msg -> msg.addReaction(ReactionEmoji.unicode(PLAY_PAUSE_EMOJI))
 							.then(msg.addReaction(ReactionEmoji.unicode(NEXT_TRACK_EMOJI))));
-				}
-			}).subscribe();
+				}})
+			.retry()
+			.subscribe();
 	}
 
 	private void handleClearPlaylistEvent()
@@ -210,8 +214,8 @@ public class RadioListener
 				.map(player -> {
 					player.clearPlaylist();
 					return (Mono<Message>) event.getTextChannel().createMessage("Playlist cleared.");
-				}).orElse(Mono.empty())
-			)
+				}).orElse(Mono.empty()))
+			.retry()
 			.subscribe();
 	}
 
@@ -238,8 +242,9 @@ public class RadioListener
 					}
 
 					return Mono.empty();
-				}).orElse(Mono.empty())
-			).subscribe();
+				}).orElse(Mono.empty()))
+			.retry()
+			.subscribe();
 	}
 
 	private void handleReactionEvent()
@@ -250,6 +255,7 @@ public class RadioListener
 			dispatcher.on(ReactionRemoveEvent.class)
 				.flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))))
 			.filter(obj -> !obj.getT1().isBot())
+			.retry()
 			.subscribe(tuple -> {
 				Optional<ReactionEmoji.Unicode> unicode = tuple.getT2().asUnicodeEmoji();
 				Optional<Snowflake> guildId = tuple.getT3();

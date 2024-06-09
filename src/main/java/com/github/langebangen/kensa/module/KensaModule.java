@@ -15,6 +15,7 @@ import discord4j.rest.http.client.ClientException;
 import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
+import io.netty.channel.unix.Errors;
 import org.apache.hc.core5.http.ParseException;
 import org.cfg4j.provider.ConfigurationProvider;
 import org.slf4j.Logger;
@@ -82,6 +83,10 @@ public class KensaModule
 							.exponentialBackoffWithJitter(Duration.ofSeconds(2), Duration.ofSeconds(10))))
 			// wait 1 second and retry any server error (500)
 			.onClientResponse(ResponseFunction.retryOnceOnErrorStatus(500))
+			// Retry SocketExceptions
+			.onClientResponse(
+				ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))
+			)
 			.build();
 
 	}
