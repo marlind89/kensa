@@ -16,10 +16,11 @@
 
     <!-- Log to a file as well, including size and time based rolling -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/kensa.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>kensa.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>logs/kensa.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
-            <maxHistory>90</maxHistory>
+            <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
             <charset>UTF-8</charset>

@@ -119,8 +119,8 @@ public class KensaApp
 
 	private static void registerListeners(Injector injector)
 	{
-		injector.getInstance(RadioListener.class);
 		injector.getInstance(EventListener.class);
+		injector.getInstance(RadioListener.class);
 		injector.getInstance(TextChannelListener.class);
 		injector.getInstance(VoiceChannelListener.class);
 	}

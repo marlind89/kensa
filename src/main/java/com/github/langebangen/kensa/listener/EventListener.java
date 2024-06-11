@@ -75,7 +75,7 @@ public class EventListener
 	}
 
 	/**
-	 * Event received when the bot has succesfully logged in and ready.
+	 * Event received when the bot has successfully logged in and ready.
 	 */
 	private void onReady()
 	{

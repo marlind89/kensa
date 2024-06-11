@@ -213,7 +213,7 @@ public class TextChannelListener
 				List<String> command = new ArrayList<>();
 				command.add("/bin/bash");
 				command.add("-c");
-				command.add("sleep 5 && ~/kensa/kensa.sh" + voiceChannelId);
+				command.add("sleep 5 && ./kensa.sh" + voiceChannelId);
 				ProcessBuilder builder = new ProcessBuilder(command);
 
 				try
