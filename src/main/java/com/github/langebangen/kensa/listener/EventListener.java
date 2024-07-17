@@ -106,7 +106,7 @@ public class EventListener
 			.filterWhen(event -> event.getAuthorAsMember().map(member -> !member.isBot()))
 			.filter(message -> Command.parseCommand(message.getContent()) == null)
 			.doOnNext(message -> logMessage(message))
-			.filter(message -> (random.nextFloat() * 100) > 99)
+			.filter(message -> (random.nextFloat() * 1000) > 999)
 			.flatMap(message -> message.getChannel()
 				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent())))
 			.subscribe();
