@@ -5,6 +5,7 @@
     <logger name="io.netty" level="INFO"/>
     <logger name="reactor" level="INFO"/>
     <logger name="com.github.langebangen.kensa" level="DEBUG"/>
+    <logger name="dev.lavalink.youtube.http.YoutubeOauth2Handler" level="INFO"/>
 
     <!-- Display the logs in your console with the following format -->
     <!-- You can learn more about this here: https://logback.qos.ch/manual/layouts.html#ClassicPatternLayout -->

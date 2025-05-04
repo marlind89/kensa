@@ -11,3 +11,14 @@ deploy.sh
 *.pyc
 message-model.json
 *.versionsBackup
+
+.vs
+
+versionupdater/bin
+versionupdater/obj
+versionupdater/Properties
+versionupdater/publish
+versionupdater.exe
+versionupdater.pdb
+
+currentVersions.json

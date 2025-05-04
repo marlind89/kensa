@@ -1,6 +1,8 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
 import com.github.langebangen.kensa.audio.lavaplayer.sourcemanager.SpotifySourceManager;
+import com.github.langebangen.kensa.audio.lavaplayer.sourcemanager.SunoSourceManager;
+import com.github.langebangen.kensa.config.YoutubeConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -28,15 +30,20 @@ public class LavaplayerModule
 
 	@Provides
 	@Singleton
-	public YoutubeAudioSourceManager provideYoutubeAudioSourceManager(){
-		return new YoutubeAudioSourceManager(true);
+	public YoutubeAudioSourceManager provideYoutubeAudioSourceManager(YoutubeConfig config)
+	{
+		var ytSourceManager =  new YoutubeAudioSourceManager(true);
+		ytSourceManager.useOauth2(config.token(), false);
+		return ytSourceManager;
 	}
+
 
 	@Provides
 	@Singleton
 	public AudioPlayerManager provideAudioPlayerManager(
 		YoutubeAudioSourceManager ytSourceManager,
-		SpotifySourceManager spotifySourceManager)
+		SpotifySourceManager spotifySourceManager,
+		SunoSourceManager sunoSourceManager)
 	{
 		DefaultAudioPlayerManager playerManager = new DefaultAudioPlayerManager();
 		playerManager.registerSourceManager(ytSourceManager);
@@ -45,6 +52,7 @@ public class LavaplayerModule
 		playerManager.registerSourceManager(new VimeoAudioSourceManager());
 		playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
 		playerManager.registerSourceManager(new BeamAudioSourceManager());
+		playerManager.registerSourceManager(sunoSourceManager);
 		playerManager.registerSourceManager(new HttpAudioSourceManager());
 		playerManager.registerSourceManager(spotifySourceManager);
 		AudioSourceManagers.registerLocalSource(playerManager);

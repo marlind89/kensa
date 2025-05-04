@@ -66,6 +66,9 @@ public class KensaModule
 			.bind("youtube", YoutubeConfig.class));
 		bind(SentenceGeneratorConfig.class).toInstance(configProvider
 			.bind("sentenceGenerator", SentenceGeneratorConfig.class));
+		bind(SunoConfig.class).toInstance(configProvider
+			.bind("suno", SunoConfig.class));
+
 	}
 
 	@Provides

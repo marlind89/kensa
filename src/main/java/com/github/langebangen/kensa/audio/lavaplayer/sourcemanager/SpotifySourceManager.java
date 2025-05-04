@@ -1,6 +1,6 @@
 package com.github.langebangen.kensa.audio.lavaplayer.sourcemanager;
 
-import com.github.langebangen.kensa.audio.lavaplayer.YoutubeBestMatchAudioTrack;
+import com.github.langebangen.kensa.audio.lavaplayer.audiotrack.YoutubeBestMatchAudioTrack;
 import com.google.inject.Inject;
 import com.neovisionaries.i18n.CountryCode;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;

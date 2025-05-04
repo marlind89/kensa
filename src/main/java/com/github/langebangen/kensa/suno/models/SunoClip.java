@@ -1,0 +1,31 @@
+package com.github.langebangen.kensa.suno.models;
+
+public record SunoClip(
+    String id,
+    String entity_type,
+    String video_url,
+    String audio_url,
+    String image_url,
+    String image_large_url,
+    String major_model_version,
+    String model_name,
+    SunoMetadata metadata,
+    boolean is_liked,
+    String user_id,
+    String display_name,
+    String handle,
+    boolean is_handle_updated,
+    String avatar_image_url,
+    boolean is_trashed,
+    boolean explicit,
+    int comment_count,
+    int flag_count,
+    String display_tags,
+    String created_at,
+    String status,
+    String title,
+    int play_count,
+    int upvote_count,
+    boolean is_public,
+    boolean allow_comments
+) {}
