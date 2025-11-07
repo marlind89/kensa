@@ -231,6 +231,9 @@ public class RadioListener
 
 					switch(shouldPause)
 					{
+						case "":
+							player.pause(!player.isPaused());
+							break;
 						case "on":
 							player.pause(true);
 							break;
