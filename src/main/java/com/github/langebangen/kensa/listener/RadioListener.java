@@ -15,8 +15,6 @@ import discord4j.core.object.emoji.UnicodeEmoji;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.emoji.Emoji;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +27,6 @@ import java.util.Optional;
 public class RadioListener
 	extends AbstractEventListener
 {
-	private static final Logger logger = LoggerFactory.getLogger(RadioListener.class);
 	private final MusicPlayerManager playerFactory;
 
 	private static final String PLAY_PAUSE_EMOJI = "\u23EF";
@@ -55,23 +52,19 @@ public class RadioListener
 
 	private void handlePlayAudioEvent()
 	{
-		dispatcher.on(PlayAudioEvent.class)
-			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.stream(event)))
-			.retry()
-			.subscribe();
+		subscribe(PlayAudioEvent.class, c -> c
+			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.stream(event))));
 	}
 
 	private void handleSearchYoutubeEvent()
 	{
-		dispatcher.on(SearchYoutubeEvent.class)
-			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.searchYoutube(event)))
-			.retry()
-			.subscribe();
+		subscribe(SearchYoutubeEvent.class, c -> c
+			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.searchYoutube(event))));
 	}
 
 	private void handleSkipTrackEvent()
 	{
-		dispatcher.on(SkipTrackEvent.class)
+		subscribe(SkipTrackEvent.class, c -> c
 			.doOnNext(event -> {
 				String skipAmountString = event.getSkipAmount();
 				getPlayer(event).ifPresent(player -> {
@@ -91,14 +84,12 @@ public class RadioListener
 						player.skipTrack(skipAmount);
 					}
 				});
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 
 	private void handleCurrentTrackRequestEvent()
 	{
-		dispatcher.on(CurrentTrackRequestEvent.class)
+		subscribe(CurrentTrackRequestEvent.class, c -> c
 			.flatMap(event -> {
 				Optional<MusicPlayer> playerOpts = getPlayer(event);
 				if (!playerOpts.isPresent()){
@@ -113,14 +104,12 @@ public class RadioListener
 						? TrackUtils.getReadableTrack(currentSong)
 						: "none") + "**");
 				});
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 
 	private void handleLoopPlaylistEvent()
 	{
-		dispatcher.on(LoopPlaylistEvent.class)
+		subscribe(LoopPlaylistEvent.class, c -> c
 			.flatMap(event -> {
 				TextChannel channel = event.getTextChannel();
 
@@ -141,30 +130,26 @@ public class RadioListener
 							return (Mono<Message>) channel.createMessage("Invalid loop command. Specify on or off, e.g. \"!loop on\"");
 					}
 				}).orElse(Mono.empty());
-			})
-			.retry()
-			.subscribe();
+			}));
 
 	}
 
 	private void handleShuffleEvent()
 	{
-		dispatcher.on(ShufflePlaylistEvent.class)
+		subscribe(ShufflePlaylistEvent.class, c -> c
 			.flatMap(event -> getPlayer(event)
 				.map(player -> {
 					player.shuffle();
 
 					return (Mono<Message>) event.getTextChannel().createMessage("Playlist shuffled!");
 				})
-				.orElse(Mono.empty()))
-			.retry()
-			.subscribe();
+				.orElse(Mono.empty())));
 
 	}
 
 	private void handleShowPlaylistEvent()
 	{
-		dispatcher.on(ShowPlaylistEvent.class)
+		subscribe(ShowPlaylistEvent.class, c -> c
 			.flatMap(event -> {
 				Optional<MusicPlayer> playerOpts = getPlayer(event);
 				if (!playerOpts.isPresent()){
@@ -209,26 +194,24 @@ public class RadioListener
 					return channel.createMessage(message.substring(0, Math.min(message.length(), Message.MAX_CONTENT_LENGTH - 4)) + "```")
 						.flatMap(msg -> msg.addReaction(Emoji.unicode(PLAY_PAUSE_EMOJI))
 							.then(msg.addReaction(Emoji.unicode(NEXT_TRACK_EMOJI))));
-				}})
-			.retry()
-			.subscribe();
+				}}));
 	}
 
 	private void handleClearPlaylistEvent()
 	{
-		dispatcher.on(ClearPlaylistEvent.class)
+		subscribe(ClearPlaylistEvent.class, c -> c
 			.flatMap(event -> getPlayer(event)
 				.map(player -> {
 					player.clearPlaylist();
 					return (Mono<Message>) event.getTextChannel().createMessage("Playlist cleared.");
-				}).orElse(Mono.empty()))
-			.retry()
-			.subscribe();
+				})
+				.orElse(Mono.empty()))
+		);
 	}
 
 	private void handlePauseEvent()
 	{
-		dispatcher.on(PauseEvent.class)
+		subscribe(PauseEvent.class, c -> c
 			.flatMap(event -> getPlayer(event)
 				.map(player -> {
 					String shouldPause = event.shouldPause() == null
@@ -252,14 +235,12 @@ public class RadioListener
 					}
 
 					return Mono.empty();
-				}).orElse(Mono.empty()))
-			.retry()
-			.subscribe();
+				}).orElse(Mono.empty())));
 	}
 
 	private void handleReactionEvent()
 	{
-		Flux.merge(
+		subscribe(Flux.merge(
 			dispatcher.on(ReactionAddEvent.class)
 				.flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))),
 			dispatcher.on(ReactionRemoveEvent.class)
@@ -286,9 +267,7 @@ public class RadioListener
 						}
 					});
 				}
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 	
 	private boolean isInteger(String s)

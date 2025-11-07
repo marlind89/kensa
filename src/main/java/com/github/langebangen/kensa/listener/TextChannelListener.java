@@ -68,7 +68,7 @@ public class TextChannelListener
 
 	private void onHelpEvent()
 	{
-		dispatcher.on(HelpEvent.class)
+		subscribe(HelpEvent.class, c -> c
 			.flatMap(event -> event.getTextChannel().createEmbed(spec -> {
 				spec.setAuthor("Kensa v" + KensaConstants.VERSION, "https://github.com/langebangen/kensa", null);
 				spec.setTitle("Available commands:");
@@ -77,41 +77,35 @@ public class TextChannelListener
 				{
 					spec.addField(action.getAction(), action.getDescription(), false);
 				}
-			}))
-			.retry()
-			.subscribe();
+			})));
 	}
 
 
 	private void onBabylonEvent()
 	{
-		dispatcher.on(BabylonEvent.class)
+		subscribe(BabylonEvent.class, c -> c
 			.flatMap(event -> event.getTextChannel()
-				.createMessage("```" + babylon.getRandomDish() + "```"))
-			.retry()
-			.subscribe();
+				.createMessage("```" + babylon.getRandomDish() + "```")));
 	}
 
 	private void onMentionEvent()
 	{
-		dispatcher.on(MessageCreateEvent.class)
+		subscribe(MessageCreateEvent.class, c -> c
 			.flatMap(event -> event.getGuild()
 				.map(guild -> guild.getClient().getSelfId())
 				.filter(botId -> event.getMessage().getUserMentionIds().contains(botId))
 				.flatMap(botId -> event.getMessage().getChannel())
-				.flatMap(channel -> Mono.fromFuture(sentenceGenerator.generateSentence().exceptionally(c -> ""))
+				.flatMap(channel -> Mono.fromFuture(sentenceGenerator.generateSentence().exceptionally(x -> ""))
 					.flatMap(sentence -> sentence.isEmpty()
 						? Mono.empty()
 						: channel.createMessage(sentence))
 				)
-			)
-			.retry()
-			.subscribe();
+			));
 	}
 
 	private void onInsultEvent()
 	{
-		dispatcher.on(InsultEvent.class)
+		subscribe(InsultEvent.class, c -> c
 			.flatMap(event -> {
 				try(Connection conn = storage.getConnection())
 					{
@@ -138,15 +132,13 @@ public class TextChannelListener
 					logger.error("Error when fetching insult from storage.", e);
 				}
 				return Mono.empty();
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 
 
 	private void onInsultPersistEvent()
 	{
-		dispatcher.on(InsultPersistEvent.class)
+		subscribe(InsultPersistEvent.class, c -> c
 			.flatMap(event -> {
 				if(!event.isAdded() && lastInsultId == -1)
 				{
@@ -182,15 +174,13 @@ public class TextChannelListener
 					logger.error("Error when persisting insult.", e);
 				}
 				return Mono.empty();
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 
 
 	public void onRestartKensaEvent()
 	{
-		dispatcher.on(RestartKensaEvent.class)
+		subscribe(RestartKensaEvent.class, c -> c
 			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId())
 				.defaultIfEmpty(null)
 				.flatMap(vcc -> {
@@ -216,8 +206,6 @@ public class TextChannelListener
 				{
 					logger.error("Failed to restart Kensa!" , e);
 				}
-			})
-			.retry()
-			.subscribe();
+			}));
 	}
 }

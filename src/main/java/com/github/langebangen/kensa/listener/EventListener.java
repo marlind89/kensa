@@ -70,7 +70,6 @@ public class EventListener
 
 		onReady();
 		onMessageReceivedEvent();
-		onReconnectEvent();
 		onMemberJoinsVoiceChannel();
 	}
 
@@ -79,7 +78,7 @@ public class EventListener
 	 */
 	private void onReady()
 	{
-		dispatcher.on(ReadyEvent.class)
+		subscribe(ReadyEvent.class, c -> c
 			.take(1)
 			.doOnNext(e -> logger.info("Logged in successfully!"))
 			.filter(msg -> latestVoiceChannelId > 0)
@@ -88,8 +87,7 @@ public class EventListener
 			.flatMap(voiceChannel -> {
 				logger.info("Rejoining channel " + voiceChannel.getName());
 				return voiceConnections.join(voiceChannel);
-			})
-			.subscribe();
+			}));
 	}
 
 	/**
@@ -102,16 +100,15 @@ public class EventListener
 			.map(MessageCreateEvent::getMessage);
 
 		// Handles random YEAH event
-		messageFlux
+		subscribe(messageFlux
 			.filterWhen(event -> event.getAuthorAsMember().map(member -> !member.isBot()))
 			.filter(message -> Command.parseCommand(message.getContent()) == null)
 			.doOnNext(message -> logMessage(message))
 			.filter(message -> (random.nextFloat() * 1000) > 999)
 			.flatMap(message -> message.getChannel()
-				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent())))
-			.subscribe();
+				.flatMap(channel -> channel.createMessage("YEAH, " + message.getContent()))));
 
-		messageFlux
+		subscribe(messageFlux
 			.flatMap(message -> {
 				Command command = Command.parseCommand(message.getContent());
 
@@ -184,73 +181,52 @@ public class EventListener
 					default -> Mono.empty();
 				};
 			})
-			.doOnError(ex -> logger.error("Error when dispatching event!", ex))
-			.retry()
-			.subscribe(dispatcher::publish);
-	}
-
-	private void onReconnectEvent()
-	{
-		/*
-		Flux<GatewayDiscordClient> reconnectEvent = dispatcher.on(ReconnectEvent.class)
-			.doOnNext(e -> logger.info("Received reconnect event")).map(Event::getClient);
-
-		Flux<GatewayDiscordClient> readyEvent = dispatcher.on(ReadyEvent.class).skip(1)
-			.doOnNext(e -> logger.info("Received new ready event")).map(Event::getClient);
-
-		reconnectEvent.mergeWith(readyEvent)
-			.flatMap(client -> client.getGuilds()
-				.flatMap(guild -> guild.getMemberById(client.getSelfId())))
-			.flatMap(Member::getVoiceState)
-			.flatMap(VoiceState::getChannel)
-			.flatMap(vc -> voiceConnections.reconnect(vc, false))
-			.subscribe();
-		*/
+			.doOnNext(dispatcher::publish));
 	}
 
 	private void onMemberJoinsVoiceChannel()
 	{
-		dispatcher.on(VoiceStateUpdateEvent.class)
-				.filter(x -> x.getCurrent().getUserId().equals(client.getSelfId()) && x.getCurrent().getChannelId().isPresent())
-				.switchMap(event -> {
-					var currentVoiceChannelId = event.getCurrent().getChannelId().get();
+		subscribe(VoiceStateUpdateEvent.class, c -> c
+			.filter(x -> x.getCurrent().getUserId().equals(client.getSelfId()) && x.getCurrent().getChannelId().isPresent())
+			.switchMap(event -> {
+				var currentVoiceChannelId = event.getCurrent().getChannelId().get();
 
-					return dispatcher.on(VoiceStateUpdateEvent.class)
-						.filter(x -> {
-							var current = x.getCurrent();
-							var old = x.getOld();
+				return dispatcher.on(VoiceStateUpdateEvent.class)
+					.filter(x -> {
+						var current = x.getCurrent();
+						var old = x.getOld();
 
-							return current.getUserId().equals(Snowflake.of("144085745320198154")) &&
-								current.getChannelId()
-									.map(chId -> chId.equals(currentVoiceChannelId))
-									.orElse(false) &&
-								old
-									.flatMap(VoiceState::getChannelId)
-									.map(oldChId -> !oldChId.equals(currentVoiceChannelId))
-									.orElse(true);
-						})
-						.flatMap(x -> Mono.zip(
-								Mono.justOrEmpty(x.getCurrent().getGuildId()),
-								x.getCurrent().getMember()
-						));
-				})
-				.delayElements(Duration.ofMillis(500))
-				.subscribe(tuple -> {
-					var guildId = tuple.getT1();
-					var member = tuple.getT2();
+						return current.getUserId().equals(Snowflake.of("144085745320198154")) &&
+							current.getChannelId()
+								.map(chId -> chId.equals(currentVoiceChannelId))
+								.orElse(false) &&
+							old
+								.flatMap(VoiceState::getChannelId)
+								.map(oldChId -> !oldChId.equals(currentVoiceChannelId))
+								.orElse(true);
+					})
+					.flatMap(x -> Mono.zip(
+							Mono.justOrEmpty(x.getCurrent().getGuildId()),
+							x.getCurrent().getMember()
+					));
+			})
+			.delayElements(Duration.ofMillis(500))
+			.doOnNext(tuple -> {
+				var guildId = tuple.getT1();
+				var member = tuple.getT2();
 
-					var rand = random.nextInt(3);
-					String soundFile = switch (rand)
-					{
-						case 0 -> "fredrik.mp3";
-						case 1 -> "fredrik2.mp3";
-						case 2 -> "hjalp.mp3";
-						default -> throw new IllegalStateException("Unexpected value: " + rand);
-					};
+				var rand = random.nextInt(3);
+				String soundFile = switch (rand)
+				{
+					case 0 -> "fredrik.mp3";
+					case 1 -> "fredrik2.mp3";
+					case 2 -> "hjalp.mp3";
+					default -> throw new IllegalStateException("Unexpected value: " + rand);
+				};
 
-					dispatcher.publish(new PlayAudioEvent(client, guildId,
-						soundFile, false, member, true));
-				});
+				dispatcher.publish(new PlayAudioEvent(client, guildId,
+					soundFile, false, member, true));
+			}));
 	}
 
 	/**

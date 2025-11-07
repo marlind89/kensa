@@ -34,7 +34,7 @@ public class VoiceChannelListener
 
 	private void onChannelJoin()
 	{
-		dispatcher.on(JoinVoiceChannelEvent.class)
+		subscribe(JoinVoiceChannelEvent.class, c -> c
 			.flatMap(event -> event.getTextChannel().getGuild()
 				.flatMap(guild -> {
 					Mono<AudioChannel> vcToJoin;
@@ -64,28 +64,22 @@ public class VoiceChannelListener
 							.subscribe();
 					}
 				})
-			)
-			.retry()
-			.subscribe();
+			));
 	}
 
 	private void onChannelLeave()
 	{
-		dispatcher.on(LeaveVoiceChannelEvent.class)
-			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()))
-			.retry()
-			.subscribe();
+		subscribe(LeaveVoiceChannelEvent.class, c -> c
+			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId())));
 	}
 
 	private void onChannelRejoin()
 	{
-		dispatcher.on(ReconnectVoiceChannelEvent.class)
+		subscribe(ReconnectVoiceChannelEvent.class, c -> c
 			.flatMap(event -> event.getClient().getSelf()
 				.flatMap(self -> self.asMember(event.getTextChannel().getGuildId())))
 			.flatMap(Member::getVoiceState)
 			.flatMap(VoiceState::getChannel)
-			.flatMap(ac -> voiceConnections.reconnect(ac, true))
-			.retry()
-			.subscribe();
+			.flatMap(ac -> voiceConnections.reconnect(ac, true)));
 	}
 }
