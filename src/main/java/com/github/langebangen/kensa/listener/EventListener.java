@@ -135,67 +135,57 @@ public class EventListener
 					return Mono.empty();
 				}
 
-				switch(command.getAction())
-				{
+				return switch (command.getAction()) {
 					/* Text channel commands */
-					case HELP:
-						return Mono.just(new HelpEvent(client, channel));
-					case BABYLON:
-						return Mono.just(new BabylonEvent(client, channel));
-					case INSULT:
+					case HELP -> Mono.just(new HelpEvent(client, channel));
+					case BABYLON -> Mono.just(new BabylonEvent(client, channel));
+					case INSULT -> {
 						String[] insultArgs = argument.split(" ");
 						String insultType = insultArgs[0];
-						if(insultType.startsWith("<"))
-						{
+						if (insultType.startsWith("<")) {
 							String userId = insultType.replaceAll("[^\\d]", "");
-
-							return guild.getMemberById(Snowflake.of(Long.parseLong(userId)))
+							yield guild.getMemberById(Snowflake.of(Long.parseLong(userId)))
 								.map(user -> new InsultEvent(client, channel, user));
+						} else if (insultType.equals("add")) {
+							String insult = StringUtils.join(Arrays.copyOfRange(insultArgs, 1, insultArgs.length), " ");
+							yield Mono.just(new InsultPersistEvent(client, channel, true, insult));
+						} else if (insultType.equals("remove")) {
+							yield Mono.just(new InsultPersistEvent(client, channel, false, null));
 						}
-						else if(insultType.equals("add"))
-						{
-							String insult = StringUtils
-								.join(Arrays.copyOfRange(insultArgs, 1, insultArgs.length), " ");
-							return Mono.just(new InsultPersistEvent(client, channel, true, insult));
-						}
-						else if(insultType.equals("remove"))
-						{
-							return Mono.just(new InsultPersistEvent(client, channel, false, null));
-						}
+						yield Mono.empty();
+					}
 					/* Voice channel commands */
-					case JOIN:
-						return Mono.just(new JoinVoiceChannelEvent(client, channel, argument, member));
-					case LEAVE:
-						return Mono.just(new LeaveVoiceChannelEvent(client, channel));
-					case RECONNECT:
-						return Mono.just(new ReconnectVoiceChannelEvent(client, channel));
-					/* Radio commands */
-					case PLAY:
+					case JOIN -> Mono.just(new JoinVoiceChannelEvent(client, channel, argument, member));
+					case LEAVE -> Mono.just(new LeaveVoiceChannelEvent(client, channel));
+					case RECONNECT -> Mono.just(new ReconnectVoiceChannelEvent(client, channel));
+					/* Music player commands */
+					case PLAY -> {
 						String playArg = argument.replace("-p ", "");
-						return Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument), member, false));
-					case SKIP:
-						return Mono.just(new SkipTrackEvent(client, channel, argument));
-					case SONG:
-						return Mono.just(new CurrentTrackRequestEvent(client, channel));
-					case LOOP:
-						return Mono.just(new LoopPlaylistEvent(client, channel, argument));
-					case SHUFFLE:
-						return Mono.just(new ShufflePlaylistEvent(client, channel));
-					case PLAYLIST:
-						return Mono.just(new ShowPlaylistEvent(client, channel));
-					case PAUSE:
-						return Mono.just(new PauseEvent(client, channel, argument));
-					case SEARCH:
-						String searchArg = argument.replace("-p ", "");
-						return Mono.just(new SearchYoutubeEvent(client, channel, searchArg, !searchArg.equals(argument)));
-					case CLEAR:
-						return Mono.just(new ClearPlaylistEvent(client, channel));
-					case RESTART:
-						return Mono.just(new RestartKensaEvent(client, channel));
-				}
-
-				return Mono.empty();
+						yield Mono.just(new PlayAudioEvent(client, channel, playArg, !playArg.equals(argument), member, false));
+					}
+					case SKIP -> Mono.just(new SkipTrackEvent(client, channel, argument));
+					case SONG -> Mono.just(new CurrentTrackRequestEvent(client, channel));
+					case LOOP -> Mono.just(new LoopPlaylistEvent(client, channel, argument));
+					case SHUFFLE -> Mono.just(new ShufflePlaylistEvent(client, channel));
+					case PLAYLIST -> Mono.just(new ShowPlaylistEvent(client, channel));
+					case PAUSE -> Mono.just(new PauseEvent(client, channel, argument));
+					case SEARCH -> {
+						if (argument != null) {
+							var searchArg = argument.replace("-p ", "");
+							if (!searchArg.trim().isEmpty()) {
+								yield Mono.just(new SearchYoutubeEvent(client, channel, searchArg, !searchArg.equals(argument)));
+							}
+						}
+						yield Mono.empty();
+					}
+					case CLEAR -> Mono.just(new ClearPlaylistEvent(client, channel));
+					/* Misc commands */
+					case RESTART -> Mono.just(new RestartKensaEvent(client, channel));
+					default -> Mono.empty();
+				};
 			})
+			.doOnError(ex -> logger.error("Error when dispatching event!", ex))
+			.retry()
 			.subscribe(dispatcher::publish);
 	}
 

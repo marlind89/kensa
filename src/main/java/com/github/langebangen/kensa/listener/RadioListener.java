@@ -1,6 +1,7 @@
 package com.github.langebangen.kensa.listener;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
+import com.github.langebangen.kensa.audio.lavaplayer.AudioMusicPlayer;
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.*;
 import com.github.langebangen.kensa.util.TrackUtils;
@@ -55,19 +56,23 @@ public class RadioListener
 	private void handlePlayAudioEvent()
 	{
 		dispatcher.on(PlayAudioEvent.class)
-			.subscribe(event -> getPlayer(event).ifPresent(player -> player.stream(event)));
+			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.stream(event)))
+			.retry()
+			.subscribe();
 	}
 
 	private void handleSearchYoutubeEvent()
 	{
 		dispatcher.on(SearchYoutubeEvent.class)
-			.subscribe(event -> getPlayer(event).ifPresent(player -> player.searchYoutube(event)));
+			.doOnNext(event -> getPlayer(event).ifPresent(player -> player.searchYoutube(event)))
+			.retry()
+			.subscribe();
 	}
 
 	private void handleSkipTrackEvent()
 	{
 		dispatcher.on(SkipTrackEvent.class)
-			.subscribe(event -> {
+			.doOnNext(event -> {
 				String skipAmountString = event.getSkipAmount();
 				getPlayer(event).ifPresent(player -> {
 					if(skipAmountString == null)
@@ -86,8 +91,9 @@ public class RadioListener
 						player.skipTrack(skipAmount);
 					}
 				});
-			});
-
+			})
+			.retry()
+			.subscribe();
 	}
 
 	private void handleCurrentTrackRequestEvent()
@@ -259,15 +265,14 @@ public class RadioListener
 			dispatcher.on(ReactionRemoveEvent.class)
 				.flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))))
 			.filter(obj -> !obj.getT1().isBot())
-			.retry()
-			.subscribe(tuple -> {
+			.doOnNext(tuple -> {
 				Optional<UnicodeEmoji> unicode = tuple.getT2().asUnicodeEmoji();
 				Optional<Snowflake> guildId = tuple.getT3();
 
 				if (guildId.isPresent() && unicode.isPresent()){
 					Optional<MusicPlayer> playerOpts = playerFactory
 						.getMusicPlayer(guildId.get())
-						.map(x -> x.musicPlayer());
+						.map(AudioMusicPlayer::musicPlayer);
 
 					playerOpts.ifPresent(player -> {
 						switch(unicode.get().getRaw())
@@ -281,7 +286,9 @@ public class RadioListener
 						}
 					});
 				}
-			});
+			})
+			.retry()
+			.subscribe();
 	}
 	
 	private boolean isInteger(String s)
