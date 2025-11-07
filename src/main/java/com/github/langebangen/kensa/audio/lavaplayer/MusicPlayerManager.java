@@ -30,7 +30,7 @@ import java.util.Optional;
 @Singleton
 public class MusicPlayerManager
 {
-	private final Map<Snowflake, MusicPlayer> musicPlayers;
+	private final Map<Snowflake, AudioMusicPlayer> musicPlayers;
 	private final AudioPlayerManager playerManager;
 	private final YoutubeApiService youtubeApiService;
 	private final YoutubeSearchProvider ytSearchProvider;
@@ -54,41 +54,46 @@ public class MusicPlayerManager
 		ytSearchProvider = new YoutubeSearchProvider();
 	}
 
-	/**
-	 * Gets the {@link MusicPlayer} associated with the specified {@link KensaEvent}.
-	 * If no such {@link MusicPlayer} exists then it is created and the returned.
+		/**
+	 * Gets the {@link AudioMusicPlayer} associated with the specified {@link KensaEvent}.
+	 * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
 	 *
 	 * @param event
 	 * 		the {@link KensaEvent}
 	 *
 	 * @return
-	 * 		the {@link MusicPlayer}
+	 * 		the {@link AudioMusicPlayer}
 	 */
-	public Optional<MusicPlayer> getMusicPlayer(KensaEvent event)
+	public Optional<AudioMusicPlayer> getMusicPlayer(KensaEvent event)
 	{
 		return getMusicPlayer(event.getGuildId());
 	}
 
-	public void putMusicPlayer(Snowflake guildId, AudioPlayer audioPlayer){
-		audioPlayer.setVolume(50);
-		TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
-		audioPlayer.addListener(scheduler);
+	public AudioMusicPlayer getOrCreateMusicPlayer(Snowflake guildId){
+		return musicPlayers.computeIfAbsent(guildId, id -> {
+			AudioPlayer audioPlayer = playerManager.createPlayer();
+			audioPlayer.setVolume(50);
+			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
+			audioPlayer.addListener(scheduler);
 
-		musicPlayers.put(guildId, new LavaMusicPlayer(scheduler,
-			playerManager, ytSearchProvider, youtubeApiService, spotifyApi, ytAudioSourceManager));
+			var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider,
+				youtubeApiService, spotifyApi, ytAudioSourceManager);
+
+			return new AudioMusicPlayer(audioPlayer, musicPlayer);
+		});
 	}
 
 	/**
-	 * Gets the {@link MusicPlayer} associated with the specified guild id.
-	 * If no such {@link MusicPlayer} exists then it is created and the returned.
+	 * Gets the {@link AudioMusicPlayer} associated with the specified guild id.
+	 * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
 	 *
 	 * @param guildId
 	 * 		the guild id
 	 *
 	 * @return
-	 * 		the {@link MusicPlayer}
+	 * 		the {@link AudioMusicPlayer}
 	 */
-	public Optional<MusicPlayer> getMusicPlayer(Snowflake guildId)
+	public Optional<AudioMusicPlayer> getMusicPlayer(Snowflake guildId)
 	{
 		return Optional.ofNullable(musicPlayers.get(guildId));
 	}
@@ -120,9 +125,26 @@ public class MusicPlayerManager
 		public void onTrackStart(AudioPlayer player, AudioTrack track)
 		{
 			super.onTrackStart(player, track);
+			setTrackPlayingStatus(track);
+		}
 
-			client.updatePresence(ClientPresence.online(ClientActivity.playing(TrackUtils.getReadableTrack(track))))
-				.subscribe();
+		@Override
+		public void onPlayerPause(AudioPlayer player)
+		{
+			super.onPlayerPause(player);
+			clearTrackPlayingStatus();
+		}
+
+		@Override
+		public void onPlayerResume(AudioPlayer player)
+		{
+			super.onPlayerResume(player);
+
+			var track = player.getPlayingTrack();
+
+			if (track != null){
+				setTrackPlayingStatus(track);
+			}
 		}
 
 		@Override
@@ -130,10 +152,20 @@ public class MusicPlayerManager
 		{
 			if(!hasNextTrack())
 			{
-				client.updatePresence(ClientPresence.online())
-					.subscribe();
+				clearTrackPlayingStatus();
 			}
 			super.onTrackEnd(player, track, endReason);
+		}
+
+		private void clearTrackPlayingStatus()
+		{
+			client.updatePresence(ClientPresence.online()).subscribe();
+		}
+
+		private void setTrackPlayingStatus(AudioTrack track)
+		{
+			client.updatePresence(ClientPresence.online(ClientActivity.playing(TrackUtils.getReadableTrack(track))))
+				.subscribe();
 		}
 	}
 }

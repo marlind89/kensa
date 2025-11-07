@@ -194,7 +194,7 @@ public class TextChannelListener
 			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId())
 				.defaultIfEmpty(null)
 				.flatMap(vcc -> {
-					String voiceChannelId = vcc == null ? "" : " " + vcc.getAudioChannel().getId().asLong();
+					String voiceChannelId = vcc == null ? "" : " " + vcc.audioChannel().getId().asLong();
 					return event.getTextChannel().createMessage("Restarting...")
 						.then(event.getClient().logout())
 						.thenReturn(voiceChannelId);

@@ -263,7 +263,8 @@ public class RadioListener
 
 				if (guildId.isPresent() && unicode.isPresent()){
 					Optional<MusicPlayer> playerOpts = playerFactory
-						.getMusicPlayer(guildId.get());
+						.getMusicPlayer(guildId.get())
+						.map(x -> x.musicPlayer());
 
 					playerOpts.ifPresent(player -> {
 						switch(unicode.get().getRaw())
@@ -323,6 +324,6 @@ public class RadioListener
 	 */
 	private Optional<MusicPlayer> getPlayer(KensaEvent event)
 	{
-		return playerFactory.getMusicPlayer(event);
+		return playerFactory.getMusicPlayer(event).map(x -> x.musicPlayer());
 	}
 }
