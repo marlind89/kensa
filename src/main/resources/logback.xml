@@ -6,7 +6,10 @@
     <logger name="reactor" level="INFO"/>
     <logger name="com.github.langebangen.kensa" level="DEBUG"/>
     <logger name="dev.lavalink.youtube.http.YoutubeOauth2Handler" level="INFO"/>
-
+    <!-- Suppress unsupported packet type errors -->
+    <logger name="discord4j.voice.LocalVoiceReceiveTask" level="OFF"/>
+    <logger name="discord4j.voice.PacketTransformer" level="OFF"/>
+    
     <!-- Display the logs in your console with the following format -->
     <!-- You can learn more about this here: https://logback.qos.ch/manual/layouts.html#ClassicPatternLayout -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -21,13 +24,12 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>logs/kensa.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
+            <maxHistory>10</maxHistory>
         </rollingPolicy>
         <encoder>
             <charset>UTF-8</charset>
             <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %-40.40logger{39} : %msg%n</Pattern>
         </encoder>
-        <prudent>true</prudent>
     </appender>
 
     <!-- Here you can set the base logger level. If DEBUG is too chatty for you, you can use INFO -->

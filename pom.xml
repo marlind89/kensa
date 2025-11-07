@@ -20,7 +20,7 @@
          </repository>
          <repository>
              <id>lavalink</id>
-             <url>https://maven.lavalink.dev/snapshots</url>
+             <url>https://maven.lavalink.dev/releases</url>
          </repository>
          <repository>
              <id>dv8tion</id>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>com.discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>3.2.8</version>
+            <version>3.3.0</version>
         </dependency>
 
         <dependency>
@@ -103,7 +103,7 @@
         <dependency>
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>youtube-plugin</artifactId>
-            <version>0e5cfca4e88c32db430ce76e6866b13035c85d22</version>
+            <version>[1.16.0,)</version>
         </dependency>
 
         <dependency>

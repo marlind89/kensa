@@ -1,6 +1,5 @@
 package com.github.langebangen.kensa.listener;
 
-import com.github.langebangen.kensa.audio.VoiceChannelConnection;
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.command.Action;
@@ -192,22 +191,14 @@ public class TextChannelListener
 	public void onRestartKensaEvent()
 	{
 		dispatcher.on(RestartKensaEvent.class)
-			.flatMap(event ->
-			{
-				String voiceChannelId = "";
-
-				VoiceChannelConnection vcc = voiceConnections
-					.disconnect(event.getTextChannel().getGuildId());
-
-				if (vcc != null)
-				{
-					voiceChannelId = " " + vcc.getVoiceChannel().getId().asLong();
-				}
-
-				return event.getTextChannel().createMessage("Restarting...")
-					.then(event.getClient().logout())
-					.thenReturn(voiceChannelId);
-			})
+			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId())
+				.defaultIfEmpty(null)
+				.flatMap(vcc -> {
+					String voiceChannelId = vcc == null ? "" : " " + vcc.getAudioChannel().getId().asLong();
+					return event.getTextChannel().createMessage("Restarting...")
+						.then(event.getClient().logout())
+						.thenReturn(voiceChannelId);
+				}))
 			.doOnNext(voiceChannelId ->
 			{
 				List<String> command = new ArrayList<>();

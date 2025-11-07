@@ -10,9 +10,10 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
+import discord4j.core.object.emoji.UnicodeEmoji;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
-import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.core.object.emoji.Emoji;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -200,8 +201,8 @@ public class RadioListener
 					String message = sb.toString();
 
 					return channel.createMessage(message.substring(0, Math.min(message.length(), Message.MAX_CONTENT_LENGTH - 4)) + "```")
-						.flatMap(msg -> msg.addReaction(ReactionEmoji.unicode(PLAY_PAUSE_EMOJI))
-							.then(msg.addReaction(ReactionEmoji.unicode(NEXT_TRACK_EMOJI))));
+						.flatMap(msg -> msg.addReaction(Emoji.unicode(PLAY_PAUSE_EMOJI))
+							.then(msg.addReaction(Emoji.unicode(NEXT_TRACK_EMOJI))));
 				}})
 			.retry()
 			.subscribe();
@@ -257,7 +258,7 @@ public class RadioListener
 			.filter(obj -> !obj.getT1().isBot())
 			.retry()
 			.subscribe(tuple -> {
-				Optional<ReactionEmoji.Unicode> unicode = tuple.getT2().asUnicodeEmoji();
+				Optional<UnicodeEmoji> unicode = tuple.getT2().asUnicodeEmoji();
 				Optional<Snowflake> guildId = tuple.getT3();
 
 				if (guildId.isPresent() && unicode.isPresent()){

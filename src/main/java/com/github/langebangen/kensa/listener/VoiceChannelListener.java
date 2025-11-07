@@ -8,7 +8,7 @@ import com.google.inject.Inject;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.channel.VoiceChannel;
+import discord4j.core.object.entity.channel.AudioChannel;
 import reactor.core.publisher.Mono;
 
 /**
@@ -37,7 +37,7 @@ public class VoiceChannelListener
 		dispatcher.on(JoinVoiceChannelEvent.class)
 			.flatMap(event -> event.getTextChannel().getGuild()
 				.flatMap(guild -> {
-					Mono<VoiceChannel> vcToJoin;
+					Mono<AudioChannel> vcToJoin;
 					String voiceChannelNameToJoin = event.getVoiceChannelNameToJoin();
 					if (voiceChannelNameToJoin == null || voiceChannelNameToJoin.isEmpty())
 					{
@@ -47,7 +47,7 @@ public class VoiceChannelListener
 					}
 					else
 					{
-						vcToJoin = guild.getChannels().ofType(VoiceChannel.class)
+						vcToJoin = guild.getChannels().ofType(AudioChannel.class)
 							.filter(channel -> channel.getName().trim().equalsIgnoreCase(
 								event.getVoiceChannelNameToJoin().trim()))
 							.singleOrEmpty();
@@ -72,7 +72,9 @@ public class VoiceChannelListener
 	private void onChannelLeave()
 	{
 		dispatcher.on(LeaveVoiceChannelEvent.class)
-			.subscribe(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()));
+			.flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()))
+			.retry()
+			.subscribe();
 	}
 
 	private void onChannelRejoin()
@@ -82,7 +84,7 @@ public class VoiceChannelListener
 				.flatMap(self -> self.asMember(event.getTextChannel().getGuildId())))
 			.flatMap(Member::getVoiceState)
 			.flatMap(VoiceState::getChannel)
-			.flatMap(vc -> voiceConnections.reconnect(vc, true))
+			.flatMap(ac -> voiceConnections.reconnect(ac, true))
 			.retry()
 			.subscribe();
 	}

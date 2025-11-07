@@ -20,12 +20,11 @@ import org.apache.hc.core5.http.ParseException;
 import org.cfg4j.provider.ConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.retry.Retry;
+import reactor.util.retry.Retry;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
-
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -76,20 +75,29 @@ public class KensaModule
 	public DiscordClient getDiscordClient(DiscordConfig discordConfig)
 	{
 		return DiscordClientBuilder.create(discordConfig.token())
-			// globally suppress any not found (404) error
+			// Suppress 404s globally
 			.onClientResponse(ResponseFunction.emptyIfNotFound())
-			// bad requests (400) while adding reactions will be suppressed
+
+			// Suppress 400 Bad Request errors when adding reactions
 			.onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
-			// server error (500) while creating a message will be retried, with backoff, until it succeeds
-			.onClientResponse(ResponseFunction.retryWhen(RouteMatcher.route(Routes.MESSAGE_CREATE),
-					Retry.onlyIf(ClientException.isRetryContextStatusCode(500))
-							.exponentialBackoffWithJitter(Duration.ofSeconds(2), Duration.ofSeconds(10))))
-			// wait 1 second and retry any server error (500)
-			.onClientResponse(ResponseFunction.retryOnceOnErrorStatus(500))
-			// Retry SocketExceptions
-			.onClientResponse(
-				ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))
-			)
+
+			// Global retry handler for all routes
+			.onClientResponse(ResponseFunction.retryWhen(
+				RouteMatcher.any(),
+				Retry
+					.backoff(5, Duration.ofSeconds(2)) // retry up to 5 times, starting at 2s
+					.maxBackoff(Duration.ofSeconds(10)) // cap at 10s delay
+					.jitter(0.5) // ±50% randomization
+					.filter(throwable -> {
+						// Retry on HTTP 5xx
+						if (throwable instanceof ClientException ce) {
+							int code = ce.getStatus().code();
+							return code >= 500 && code < 600;
+						}
+						// Retry on transient network errors
+						return throwable instanceof Errors.NativeIoException;
+					})
+			))
 			.build();
 
 	}

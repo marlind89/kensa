@@ -1,151 +1,121 @@
 package com.github.langebangen.kensa.audio;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
-
-import discord4j.common.util.Snowflake;
-import discord4j.core.object.entity.channel.VoiceChannel;
-import discord4j.voice.AudioProvider;
-import discord4j.voice.VoiceConnection;
-import reactor.core.publisher.Mono;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.langebangen.kensa.audio.lavaplayer.LavaPlayerAudioProvider;
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.VoiceStateUpdateEvent;
+import discord4j.core.object.VoiceState;
+import discord4j.core.object.entity.channel.AudioChannel;
+import discord4j.core.spec.AudioChannelJoinSpec;
+import discord4j.voice.AudioProvider;
+import discord4j.voice.VoiceConnection;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 
-// TODO: Not sure if all reconnection logic is necessary anymore
-// since upgrading d4j to 3.1.
-// Another approach is to just disconnect Kensa from voice channels
-// when nowhere is in the voice channel, and just reconnect
-// when someone wants to listen to music again.
+import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Singleton
-public class VoiceConnections
-{
-	private static final int MAX_RETRY_ATTEMPTS = 10;
-	private static final int RETRY_INTERVAL_SECONDS = 1;
+public class VoiceConnections {
 
 	private static final Logger logger = LoggerFactory.getLogger(VoiceConnections.class);
 
 	private final AudioPlayerManager audioPlayerManager;
 	private final MusicPlayerManager musicPlayerManager;
-	private Map<Snowflake, VoiceChannelConnection> voiceConnections;
+
+	private final ConcurrentMap<Snowflake, AudioChannelConnection> activeConnections = new ConcurrentHashMap<>();
 
 	@Inject
-	private VoiceConnections(AudioPlayerManager audioPlayerManager,
-		MusicPlayerManager musicPlayerManager){
+	public VoiceConnections(AudioPlayerManager audioPlayerManager,
+		MusicPlayerManager musicPlayerManager) {
 		this.audioPlayerManager = audioPlayerManager;
 		this.musicPlayerManager = musicPlayerManager;
-		voiceConnections = new ConcurrentHashMap<>();
 	}
 
-	public synchronized Mono<VoiceConnection> join(VoiceChannel voiceChannel){
+	/**
+	 * Join a voice channel reactively and start auto-leave monitoring.
+	 */
+	public Mono<VoiceConnection> join(AudioChannel voiceChannel) {
+		logger.info("Joining voice channel: {}", voiceChannel.getName());
+
 		AudioPlayer audioPlayer = audioPlayerManager.createPlayer();
 		musicPlayerManager.putMusicPlayer(voiceChannel.getGuildId(), audioPlayer);
 
-		AudioProvider audioProvider = new LavaPlayerAudioProvider(audioPlayer);
+		AudioProvider provider = new LavaPlayerAudioProvider(audioPlayer);
 
-		return joinVoiceChannel(audioProvider, voiceChannel);
+		return voiceChannel.join(AudioChannelJoinSpec.builder()
+			.provider(provider)
+			.build())
+			.flatMap(vc -> {
+				var acc = new AudioChannelConnection(vc, voiceChannel);
+				activeConnections.put(voiceChannel.getGuildId(), acc);
+
+				// Monitor channel for auto-leave
+				return monitorAndAutoLeave(acc, voiceChannel).thenReturn(vc);
+			});
 	}
 
-	public synchronized VoiceChannelConnection disconnect(Snowflake guildId)
-	{
-		VoiceChannelConnection vcc = RemoveVoiceChannelConnection(guildId);
-
-		if (vcc == null)
-		{
-			return null;
+	/**
+	 * Disconnect from the voice channel by guild ID reactively.
+	 * Emits the previous AudioChannelConnection (or completes empty if none).
+	 */
+	public Mono<AudioChannelConnection> disconnect(Snowflake guildId) {
+		AudioChannelConnection acc = activeConnections.remove(guildId);
+		if (acc == null) {
+			return Mono.empty();
 		}
-
-		logger.info("Found voice connection, disconnecting");
-
-		vcc.getVoiceConnection().disconnect();
-
-		return vcc;
+		// Convert existing value (already emitted) to Mono and perform disconnect
+		return acc.getVoiceConnection().disconnect()
+			.doOnSuccess(x -> logger.info("Disconnected from voice channel: {}", acc.getAudioChannel().getName()))
+			.thenReturn(acc);
 	}
 
-	public synchronized Mono<VoiceConnection> reconnect(VoiceChannel voiceChannel, boolean disconnectFirst)
-	{
-		logger.info("Reconnecting to voice channel: " + voiceChannel.getName());
+	/**
+	 * Reconnect to a voice channel, optionally disconnecting first.
+	 */
+	public Mono<VoiceConnection> reconnect(AudioChannel audioChannel, boolean disconnectFirst) {
+		Mono<Void> pre = disconnectFirst
+			? disconnect(audioChannel.getGuildId())
+				.delayElement(Duration.ofSeconds(5L)) // Wait a bit before rejoining
+				.then()
+			: Mono.empty();
 
-		VoiceChannelConnection vcc = disconnectFirst
-			? disconnect(voiceChannel.getGuildId())
-			: GetVoiceChannelConnection(voiceChannel.getGuildId());
-
-		if (vcc == null)
-		{
-			logger.warn("Didn't find any existing voice channel connection. Will create a new one.");
-			return join(voiceChannel);
-		}
-
-		logger.info("Connecting again");
-
-		return joinVoiceChannel(vcc.getAudioProvider(), voiceChannel);
+		return pre.then(Mono.defer(() -> join(audioChannel)));
 	}
 
-	private Mono<VoiceConnection> joinVoiceChannel(AudioProvider audioProvider, VoiceChannel voiceChannel)
-	{
-		return voiceChannel.join(spec -> spec.setProvider(audioProvider))
-			.doOnNext(vc -> addVoiceConnection(voiceChannel.getGuildId(),
-				new VoiceChannelConnection(vc, voiceChannel, audioProvider)));
-	}
+	/**
+	 * Monitor the voice channel and disconnect when bot is alone.
+	 */
+	private Mono<Void> monitorAndAutoLeave(AudioChannelConnection acc, AudioChannel channel) {
+		// The bot itself has a VoiceState; 1 VoiceState signals bot is alone
+		var voiceStateCounter = channel.getVoiceStates()
+			.count()
+			.map(count -> 1L == count);
 
-	private void addVoiceConnection(Snowflake guildId, VoiceChannelConnection voiceConnection)
-	{
-		logger.info("Adding new voice connection to voiceConnections map.");
-		voiceConnections.put(guildId, voiceConnection);
-	}
+		Mono<Void> onDelay = Mono.delay(Duration.ofSeconds(10L))
+			.filterWhen(ignored -> voiceStateCounter)
+			.switchIfEmpty(Mono.never())
+			.then();
 
-	private VoiceChannelConnection GetVoiceChannelConnection(Snowflake guildId)
-	{
-		return GetVoiceChannelConnection(guildId, () -> voiceConnections.get(guildId));
-	}
+		var onEvent = channel.getClient().getEventDispatcher().on(VoiceStateUpdateEvent.class)
+			.filter(event -> event.getOld().flatMap(VoiceState::getChannelId).map(channel.getId()::equals).orElse(false))
+			.delaySequence(Duration.ofSeconds((10L)))
+			.filterWhen(ignored -> voiceStateCounter)
+			.next()
+			.then();
 
-	private VoiceChannelConnection RemoveVoiceChannelConnection(Snowflake guildId)
-	{
-		return GetVoiceChannelConnection(guildId, () -> voiceConnections.remove(guildId));
-	}
-
-	private VoiceChannelConnection GetVoiceChannelConnection(Snowflake guildId,
-		Supplier<VoiceChannelConnection> getVoiceChannelConnectionFunction)
-	{
-		if (!musicPlayerManager.getMusicPlayer(guildId).isPresent()){
-			return null;
-		}
-
-		int retryAttempts = 0;
-		VoiceChannelConnection vcc;
-		while((vcc = getVoiceChannelConnectionFunction.get()) == null)
-		{
-			retryAttempts++;
-
-			logger.warn("Failed to find existing voice channel connection while trying to disconnect. "
-				+ "Trying again in " + RETRY_INTERVAL_SECONDS + " seconds");
-
-			try
-			{
-				Thread.sleep(RETRY_INTERVAL_SECONDS * 1000);
-			}
-			catch(InterruptedException e)
-			{
-				logger.error("Failed to sleep", e);
-			}
-
-			if (retryAttempts == MAX_RETRY_ATTEMPTS)
-			{
-				logger.warn("Giving up trying to find existing voice channel connection.");
-				return null;
-
-			}
-		}
-
-		return vcc;
+		// Disconnect the bot if either onDelay or onEvent are completed!
+		return Mono.firstWithSignal(onDelay, onEvent)
+			.then(acc.getVoiceConnection().disconnect())
+			.doOnTerminate(() -> {
+				logger.info("Bot disconnected from {}", channel.getName());
+				activeConnections.remove(channel.getGuildId());
+			});
 	}
 }
