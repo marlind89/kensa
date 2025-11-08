@@ -313,6 +313,6 @@ public class RadioListener
 	 */
 	private Optional<MusicPlayer> getPlayer(KensaEvent event)
 	{
-		return playerFactory.getMusicPlayer(event).map(x -> x.musicPlayer());
+		return playerFactory.getMusicPlayer(event).map(AudioMusicPlayer::musicPlayer);
 	}
 }

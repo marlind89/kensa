@@ -8,15 +8,12 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
-import se.michaelthelin.spotify.SpotifyApi;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,25 +30,17 @@ public class MusicPlayerManager
 	private final Map<Snowflake, AudioMusicPlayer> musicPlayers;
 	private final AudioPlayerManager playerManager;
 	private final YoutubeApiService youtubeApiService;
-	private final YoutubeSearchProvider ytSearchProvider;
 	private final GatewayDiscordClient client;
-	private final SpotifyApi spotifyApi;
-	private final YoutubeAudioSourceManager ytAudioSourceManager;
 
 	@Inject
 	private MusicPlayerManager(GatewayDiscordClient client,
-		SpotifyApi spotifyApi,
 		AudioPlayerManager playerManager,
-		YoutubeAudioSourceManager ytAudioSourceManager,
 		YoutubeApiService youtubeApiService)
 	{
 		this.client = client;
-		this.spotifyApi = spotifyApi;
-		this.ytAudioSourceManager = ytAudioSourceManager;
 		this.musicPlayers = new HashMap<>();
 		this.playerManager = playerManager;
 		this.youtubeApiService = youtubeApiService;
-		ytSearchProvider = new YoutubeSearchProvider();
 	}
 
 		/**
@@ -76,8 +65,7 @@ public class MusicPlayerManager
 			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
 			audioPlayer.addListener(scheduler);
 
-			var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, ytSearchProvider,
-				youtubeApiService, spotifyApi, ytAudioSourceManager);
+			var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, youtubeApiService);
 
 			return new AudioMusicPlayer(audioPlayer, musicPlayer);
 		});

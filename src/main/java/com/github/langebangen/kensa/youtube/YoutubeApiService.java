@@ -14,8 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class YoutubeApiService
@@ -39,6 +40,55 @@ public class YoutubeApiService
 			.setApplicationName(APPLICATION_NAME)
 			.build();
 	}
+
+	public List<AudioTrackInfo> search(String query)
+    {
+        try
+        {
+            YouTube.Search.List request = apiService.search()
+                .list(List.of("snippet"));
+
+            String apiKey = config.apiKey();
+            var items = request.setKey(apiKey)
+                .setMaxResults(25L)
+                .setOrder("viewCount")
+                .setQ(query)
+                .setSafeSearch("none")
+                .setType(List.of("video"))
+                .execute()
+                .getItems();
+
+            List<String> videoIds = items.stream()
+                .map(sr -> sr.getId().getVideoId())
+                .collect(Collectors.toList());
+
+            // Fetch durations
+            var durations = fetchDurations(videoIds);
+
+            return items.stream()
+                .map(sr -> {
+                    SearchResultSnippet snippet = sr.getSnippet();
+                    String videoId = sr.getId().getVideoId();
+                    long lengthMs = durations.getOrDefault(videoId, -1L);
+
+                    return new AudioTrackInfo(
+                        snippet.getTitle(),
+                        snippet.getChannelTitle(),
+                        lengthMs,
+                        videoId,
+                        false,
+                        "https://www.youtube.com/watch?v=" + videoId
+                    );
+                })
+                .collect(Collectors.toList());
+        }
+        catch(IOException e)
+        {
+            logger.error("Failed to get videos from youtube api", e);
+        }
+
+        return new ArrayList<>();
+    }
 
 	public List<AudioTrackInfo> searchPlaylists(String query)
 	{
@@ -71,6 +121,41 @@ public class YoutubeApiService
 			logger.error("Failed to get playlists from youtube api", e);
 		}
 
-		return new LinkedList<>();
+		return new ArrayList<>();
 	}
+
+	private Map<String, Long> fetchDurations(List<String> videoIds) throws IOException
+    {
+        Map<String, Long> result = new java.util.HashMap<>();
+        if(videoIds.isEmpty())
+            return result;
+
+        // videos.list supports up to 50 IDs per request; we have <=25 so single call is fine
+        YouTube.Videos.List req = apiService.videos()
+            .list(List.of("contentDetails"))
+            .setKey(config.apiKey())
+            .setId(videoIds);
+
+        var response = req.execute();
+        response.getItems().forEach(video -> {
+            String id = video.getId();
+            String isoDuration = video.getContentDetails().getDuration(); // e.g. PT1H2M30S
+            long ms = -1L;
+            if(isoDuration != null && !isoDuration.isBlank())
+            {
+                try
+                {
+                    // java.time.Duration parses the ISO-8601 format
+                    ms = java.time.Duration.parse(isoDuration).toMillis();
+                }
+                catch(Exception ignored)
+                {
+                    // keep -1
+                }
+            }
+            result.put(id, ms);
+        });
+
+        return result;
+    }
 }

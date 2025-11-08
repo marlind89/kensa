@@ -7,14 +7,12 @@ import com.github.langebangen.kensa.util.TrackUtils;
 import com.github.langebangen.kensa.youtube.YoutubeApiService;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.sedmelluq.discord.lavaplayer.track.*;
-import dev.lavalink.youtube.YoutubeAudioSourceManager;
-import dev.lavalink.youtube.track.YoutubeAudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
-import se.michaelthelin.spotify.SpotifyApi;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,24 +28,14 @@ public class LavaMusicPlayer
 
 	private final TrackScheduler trackScheduler;
 	private final AudioPlayerManager playerManager;
-	private final YoutubeSearchProvider ytSearchProvider;
 	private final YoutubeApiService youtubeApiService;
-	private final SpotifyApi spotifyApi;
-	private final YoutubeAudioSourceManager ytSourceManager;
-
 	public LavaMusicPlayer(TrackScheduler trackScheduler,
 		AudioPlayerManager playerManager,
-		YoutubeSearchProvider ytSearchProvider,
-		YoutubeApiService youtubeApiService,
-		SpotifyApi spotifyApi,
-		YoutubeAudioSourceManager ytSourceManager)
+		YoutubeApiService youtubeApiService)
 	{
 		this.trackScheduler = trackScheduler;
 		this.playerManager = playerManager;
-		this.ytSearchProvider = ytSearchProvider;
 		this.youtubeApiService = youtubeApiService;
-		this.spotifyApi = spotifyApi;
-		this.ytSourceManager = ytSourceManager;
 	}
 
 	@Override
@@ -66,20 +54,7 @@ public class LavaMusicPlayer
 		}
 		else
 		{
-			AudioItem audioItem = ytSearchProvider.loadSearchResult(event.getSearchQuery(),
-				func -> new YoutubeAudioTrack(func, ytSourceManager));
-
-			if(audioItem instanceof BasicAudioPlaylist)
-			{
-				for(AudioItem item : ((BasicAudioPlaylist)audioItem).getTracks())
-				{
-					if(item instanceof YoutubeAudioTrack)
-					{
-						YoutubeAudioTrack ytTrack = ((YoutubeAudioTrack)item);
-						trackInfos.add(ytTrack.getInfo());
-					}
-				}
-			}
+			trackInfos.addAll(youtubeApiService.search(event.getSearchQuery()));
 		}
 
 		StringBuilder sb = new StringBuilder("```");
