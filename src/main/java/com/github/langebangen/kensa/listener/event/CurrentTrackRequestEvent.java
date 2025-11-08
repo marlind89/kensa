@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class CurrentTrackRequestEvent extends KensaRadioEvent
 {
-	public CurrentTrackRequestEvent(GatewayDiscordClient client, TextChannel textChannel)
-	{
-		super(client, textChannel);
-	}
+    public CurrentTrackRequestEvent(GatewayDiscordClient client, TextChannel textChannel)
+    {
+        super(client, textChannel);
+    }
 }

@@ -8,7 +8,6 @@ import com.github.langebangen.kensa.storage.generated.tables.Insult;
 import com.github.langebangen.kensa.storage.generated.tables.Message;
 import com.github.langebangen.kensa.storage.generated.tables.records.InsultRecord;
 import com.github.langebangen.kensa.storage.generated.tables.records.MessageRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -19,13 +18,16 @@ import org.jooq.impl.Internal;
  * A class modelling foreign key relationships and constraints of tables in
  * public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
-public class Keys {
+@SuppressWarnings({"all", "unchecked", "rawtypes", "this-escape"})
+public class Keys
+{
 
     // -------------------------------------------------------------------------
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
-    public static final UniqueKey<InsultRecord> INSULT_PKEY = Internal.createUniqueKey(Insult.INSULT, DSL.name("insult_pkey"), new TableField[] { Insult.INSULT.ID }, true);
-    public static final UniqueKey<MessageRecord> MESSAGE_PKEY = Internal.createUniqueKey(Message.MESSAGE, DSL.name("message_pkey"), new TableField[] { Message.MESSAGE.ID }, true);
+    public static final UniqueKey<InsultRecord> INSULT_PKEY =
+        Internal.createUniqueKey(Insult.INSULT, DSL.name("insult_pkey"), new TableField[]{Insult.INSULT.ID}, true);
+    public static final UniqueKey<MessageRecord> MESSAGE_PKEY =
+        Internal.createUniqueKey(Message.MESSAGE, DSL.name("message_pkey"), new TableField[]{Message.MESSAGE.ID}, true);
 }

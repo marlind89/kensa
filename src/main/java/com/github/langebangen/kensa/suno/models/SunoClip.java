@@ -28,4 +28,6 @@ public record SunoClip(
     int upvote_count,
     boolean is_public,
     boolean allow_comments
-) {}
+)
+{
+}

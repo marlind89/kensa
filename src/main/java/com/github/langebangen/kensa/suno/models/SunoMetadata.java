@@ -11,4 +11,6 @@ public record SunoMetadata(
     boolean can_remix,
     boolean is_remix,
     int priority
-) {}
+)
+{
+}

@@ -1,12 +1,11 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
-import java.nio.ByteBuffer;
-
-import discord4j.voice.AudioProvider;
-
 import com.sedmelluq.discord.lavaplayer.format.StandardAudioDataFormats;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame;
+import discord4j.voice.AudioProvider;
+
+import java.nio.ByteBuffer;
 
 /**
  * This is a wrapper around AudioPlayer which makes it behave as an
@@ -17,33 +16,34 @@ import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame;
  * @author langen
  */
 public class LavaPlayerAudioProvider
-	extends AudioProvider
+    extends AudioProvider
 {
 
-	private final MutableAudioFrame frame = new MutableAudioFrame();
-	private final AudioPlayer audioPlayer;
+    private final MutableAudioFrame frame = new MutableAudioFrame();
+    private final AudioPlayer audioPlayer;
 
-	/**
-	 * @param audioPlayer
-	 * 	Audio audioPlayer to wrap.
-	 */
-	public LavaPlayerAudioProvider(AudioPlayer audioPlayer)
-	{
-		// Allocate a ByteBuffer for Discord4J's AudioProvider to hold audio data for Discord
-		super(ByteBuffer.allocate(StandardAudioDataFormats.DISCORD_OPUS.maximumChunkSize()));
-		// Set LavaPlayer's MutableAudioFrame to use the same buffer as the one we just allocated
-		frame.setBuffer(getBuffer());
-		this.audioPlayer = audioPlayer;
-	}
+    /**
+     * @param audioPlayer Audio audioPlayer to wrap.
+     */
+    public LavaPlayerAudioProvider(AudioPlayer audioPlayer)
+    {
+        // Allocate a ByteBuffer for Discord4J's AudioProvider to hold audio data for Discord
+        super(ByteBuffer.allocate(StandardAudioDataFormats.DISCORD_OPUS.maximumChunkSize()));
+        // Set LavaPlayer's MutableAudioFrame to use the same buffer as the one we just allocated
+        frame.setBuffer(getBuffer());
+        this.audioPlayer = audioPlayer;
+    }
 
-	@Override
-	public boolean provide() {
-		// AudioPlayer writes audio data to its AudioFrame
-		final boolean didProvide = audioPlayer.provide(frame);
-		// If audio was provided, flip from write-mode to read-mode
-		if (didProvide) {
-			getBuffer().flip();
-		}
-		return didProvide;
-	}
+    @Override
+    public boolean provide()
+    {
+        // AudioPlayer writes audio data to its AudioFrame
+        final boolean didProvide = audioPlayer.provide(frame);
+        // If audio was provided, flip from write-mode to read-mode
+        if (didProvide)
+        {
+            getBuffer().flip();
+        }
+        return didProvide;
+    }
 }

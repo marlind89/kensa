@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class ClearPlaylistEvent extends KensaRadioEvent
 {
-	public ClearPlaylistEvent(GatewayDiscordClient client, TextChannel channel)
-	{
-		super(client, channel);
-	}
+    public ClearPlaylistEvent(GatewayDiscordClient client, TextChannel channel)
+    {
+        super(client, channel);
+    }
 }

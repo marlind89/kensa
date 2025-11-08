@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class BabylonEvent extends KensaEvent
 {
-	public BabylonEvent(GatewayDiscordClient client, TextChannel textChannel)
-	{
-		super(client, textChannel);
-	}
+    public BabylonEvent(GatewayDiscordClient client, TextChannel textChannel)
+    {
+        super(client, textChannel);
+    }
 }

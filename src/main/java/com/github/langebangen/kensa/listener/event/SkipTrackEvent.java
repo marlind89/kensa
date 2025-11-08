@@ -8,17 +8,17 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class SkipTrackEvent extends KensaRadioEvent
 {
-	private final String skipAmount;
+    private final String skipAmount;
 
-	public SkipTrackEvent(GatewayDiscordClient client, TextChannel textChannel, String skipAmount)
-	{
-		super(client, textChannel);
-		this.skipAmount = skipAmount;
-	}
+    public SkipTrackEvent(GatewayDiscordClient client, TextChannel textChannel, String skipAmount)
+    {
+        super(client, textChannel);
+        this.skipAmount = skipAmount;
+    }
 
-	public String getSkipAmount()
-	{
-		return skipAmount;
-	}
+    public String getSkipAmount()
+    {
+        return skipAmount;
+    }
 
 }

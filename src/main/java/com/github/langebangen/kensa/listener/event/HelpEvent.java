@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class HelpEvent extends KensaEvent
 {
-	public HelpEvent(GatewayDiscordClient client, TextChannel textChannel)
-	{
-		super(client, textChannel);
-	}
+    public HelpEvent(GatewayDiscordClient client, TextChannel textChannel)
+    {
+        super(client, textChannel);
+    }
 }

@@ -10,8 +10,8 @@ public class KensaRadioEvent extends KensaEvent
 {
 
 
-	public KensaRadioEvent(GatewayDiscordClient client, TextChannel channel)
-	{
-		super(client, channel);
-	}
+    public KensaRadioEvent(GatewayDiscordClient client, TextChannel channel)
+    {
+        super(client, channel);
+    }
 }

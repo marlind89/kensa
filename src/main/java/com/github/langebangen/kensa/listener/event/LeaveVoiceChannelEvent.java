@@ -8,8 +8,8 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class LeaveVoiceChannelEvent extends KensaEvent
 {
-	public LeaveVoiceChannelEvent(GatewayDiscordClient client, TextChannel channel)
-	{
-		super(client, channel);
-	}
+    public LeaveVoiceChannelEvent(GatewayDiscordClient client, TextChannel channel)
+    {
+        super(client, channel);
+    }
 }

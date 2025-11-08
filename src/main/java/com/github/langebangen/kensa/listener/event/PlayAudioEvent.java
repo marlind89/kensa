@@ -10,59 +10,59 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class PlayAudioEvent extends KensaRadioEvent
 {
-	private final String url;
-	private final boolean isPlaylistRequest;
-	private final Member member;
-	private final boolean playImmediately;
+    private final String url;
+    private final boolean isPlaylistRequest;
+    private final Member member;
+    private final boolean playImmediately;
 
-	public PlayAudioEvent(GatewayDiscordClient client, TextChannel textChannel,
-		String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
-	{
-		super(client, textChannel);
-		this.url = identifier;
-		this.isPlaylistRequest = isPlaylistRequest;
-		this.member = member;
-		this.playImmediately = playImmediately;
-	}
+    public PlayAudioEvent(GatewayDiscordClient client, TextChannel textChannel,
+        String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
+    {
+        super(client, textChannel);
+        this.url = identifier;
+        this.isPlaylistRequest = isPlaylistRequest;
+        this.member = member;
+        this.playImmediately = playImmediately;
+    }
 
-	public PlayAudioEvent(GatewayDiscordClient client, Snowflake guildId,
-		 String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
-	{
-		super(client, null);
-		this.url = identifier;
-		this.isPlaylistRequest = isPlaylistRequest;
-		this.member = member;
-		setGuildId(guildId);
-		this.playImmediately = playImmediately;
-	}
-	/**
-	 * Gets the song identity requested
-	 *
-	 * @return
-	 * 		the song identity requested
-	 */
-	public String getSongIdentity()
-	{
-		return url;
-	}
+    public PlayAudioEvent(GatewayDiscordClient client, Snowflake guildId,
+        String identifier, boolean isPlaylistRequest, Member member, boolean playImmediately)
+    {
+        super(client, null);
+        this.url = identifier;
+        this.isPlaylistRequest = isPlaylistRequest;
+        this.member = member;
+        setGuildId(guildId);
+        this.playImmediately = playImmediately;
+    }
 
-	/**
-	 * Returns whether this is a playlist request event
-	 *
-	 * @return
-	 * 		whether this is a playlist request event
-	 */
-	public boolean isPlaylistRequest()
-	{
-		return isPlaylistRequest;
-	}
-	public Member getMember()
-	{
-		return member;
-	}
+    /**
+     * Gets the song identity requested
+     *
+     * @return the song identity requested
+     */
+    public String getSongIdentity()
+    {
+        return url;
+    }
 
-	public boolean getPlayImmediately()
-	{
-		return this.playImmediately;
-	}
+    /**
+     * Returns whether this is a playlist request event
+     *
+     * @return whether this is a playlist request event
+     */
+    public boolean isPlaylistRequest()
+    {
+        return isPlaylistRequest;
+    }
+
+    public Member getMember()
+    {
+        return member;
+    }
+
+    public boolean getPlayImmediately()
+    {
+        return this.playImmediately;
+    }
 }

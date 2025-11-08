@@ -1,18 +1,17 @@
 package com.github.langebangen.kensa.audio;
 
-import java.util.List;
-
-import discord4j.core.object.entity.Guild;
-
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
 import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.object.entity.Guild;
+
+import java.util.List;
 
 /**
  * Main interface for interacting with the music player.
  * This {@link MusicPlayer} may be created with the {@link MusicPlayerManager}
- *
+ * <p>
  * Every {@link Guild} has its own {@link MusicPlayer} which will be located
  * inside the {@link MusicPlayerManager}
  *
@@ -24,8 +23,7 @@ public interface MusicPlayer
      * Streams the content located on the specified URL to the specified audioPlayer.
      * Will send a message that the content has been added to the playlist queue.
      *
-     * @param event
-     * 		the {@link PlayAudioEvent}
+     * @param event the {@link PlayAudioEvent}
      */
     void stream(PlayAudioEvent event);
 
@@ -34,8 +32,7 @@ public interface MusicPlayer
      * and prints out the results to the channel associated with the
      * specified event.
      *
-     * @param event
-     *      the {@link SearchYoutubeEvent}
+     * @param event the {@link SearchYoutubeEvent}
      */
     void searchYoutube(SearchYoutubeEvent event);
 
@@ -47,16 +44,14 @@ public interface MusicPlayer
     /**
      * Skips the specfied amount of tracks
      *
-     * @param skipAmount
-     *      the amount of tracks to skip
+     * @param skipAmount the amount of tracks to skip
      */
     void skipTrack(int skipAmount);
 
     /**
      * Sets whether looping should be enabled.
      *
-     * @param loopEnabled
-     *      true to loop the playlist, false otherwise
+     * @param loopEnabled true to loop the playlist, false otherwise
      */
     void setLoopEnabled(boolean loopEnabled);
 
@@ -69,16 +64,14 @@ public interface MusicPlayer
      * Gets the current {@link AudioTrack} playing, or null
      * if nothing is playing.
      *
-     * @return
-     *      the current {@link AudioTrack}, or null if nothing is playing
+     * @return the current {@link AudioTrack}, or null if nothing is playing
      */
     AudioTrack getCurrentTrack();
 
     /**
      * Gets the playlist
      *
-     * @return
-     *      the {@link AudioTrack} playlist
+     * @return the {@link AudioTrack} playlist
      */
     List<AudioTrack> getPlayList();
 
@@ -90,16 +83,14 @@ public interface MusicPlayer
     /**
      * Pauses the player
      *
-     * @param pause
-     *      true to pause, false to play
+     * @param pause true to pause, false to play
      */
     void pause(boolean pause);
 
     /**
      * Returns whether this player is paused
      *
-     * @return
-     *      whether this player is paused
+     * @return whether this player is paused
      */
     boolean isPaused();
 }

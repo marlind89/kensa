@@ -5,9 +5,9 @@ import discord4j.core.object.entity.channel.TextChannel;
 
 public class RestartKensaEvent extends KensaEvent
 {
-	public RestartKensaEvent(GatewayDiscordClient client,
-		TextChannel textChannel)
-	{
-		super(client, textChannel);
-	}
+    public RestartKensaEvent(GatewayDiscordClient client,
+        TextChannel textChannel)
+    {
+        super(client, textChannel);
+    }
 }

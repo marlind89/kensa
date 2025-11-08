@@ -27,133 +27,129 @@ import java.util.Optional;
 @Singleton
 public class MusicPlayerManager
 {
-	private final Map<Snowflake, AudioMusicPlayer> musicPlayers;
-	private final AudioPlayerManager playerManager;
-	private final YoutubeApiService youtubeApiService;
-	private final GatewayDiscordClient client;
+    private final Map<Snowflake, AudioMusicPlayer> musicPlayers;
+    private final AudioPlayerManager playerManager;
+    private final YoutubeApiService youtubeApiService;
+    private final GatewayDiscordClient client;
 
-	@Inject
-	private MusicPlayerManager(GatewayDiscordClient client,
-		AudioPlayerManager playerManager,
-		YoutubeApiService youtubeApiService)
-	{
-		this.client = client;
-		this.musicPlayers = new HashMap<>();
-		this.playerManager = playerManager;
-		this.youtubeApiService = youtubeApiService;
-	}
+    @Inject
+    private MusicPlayerManager(GatewayDiscordClient client,
+        AudioPlayerManager playerManager,
+        YoutubeApiService youtubeApiService)
+    {
+        this.client = client;
+        this.musicPlayers = new HashMap<>();
+        this.playerManager = playerManager;
+        this.youtubeApiService = youtubeApiService;
+    }
 
-		/**
-	 * Gets the {@link AudioMusicPlayer} associated with the specified {@link KensaEvent}.
-	 * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
-	 *
-	 * @param event
-	 * 		the {@link KensaEvent}
-	 *
-	 * @return
-	 * 		the {@link AudioMusicPlayer}
-	 */
-	public Optional<AudioMusicPlayer> getMusicPlayer(KensaEvent event)
-	{
-		return getMusicPlayer(event.getGuildId());
-	}
+    /**
+     * Gets the {@link AudioMusicPlayer} associated with the specified {@link KensaEvent}.
+     * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
+     *
+     * @param event the {@link KensaEvent}
+     * @return the {@link AudioMusicPlayer}
+     */
+    public Optional<AudioMusicPlayer> getMusicPlayer(KensaEvent event)
+    {
+        return getMusicPlayer(event.getGuildId());
+    }
 
-	public AudioMusicPlayer getOrCreateMusicPlayer(Snowflake guildId){
-		return musicPlayers.computeIfAbsent(guildId, id -> {
-			AudioPlayer audioPlayer = playerManager.createPlayer();
-			audioPlayer.setVolume(50);
-			TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
-			audioPlayer.addListener(scheduler);
+    public AudioMusicPlayer getOrCreateMusicPlayer(Snowflake guildId)
+    {
+        return musicPlayers.computeIfAbsent(guildId, id ->
+        {
+            AudioPlayer audioPlayer = playerManager.createPlayer();
+            audioPlayer.setVolume(50);
+            TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
+            audioPlayer.addListener(scheduler);
 
-			var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, youtubeApiService);
+            var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, youtubeApiService);
 
-			return new AudioMusicPlayer(audioPlayer, musicPlayer);
-		});
-	}
+            return new AudioMusicPlayer(audioPlayer, musicPlayer);
+        });
+    }
 
-	/**
-	 * Gets the {@link AudioMusicPlayer} associated with the specified guild id.
-	 * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
-	 *
-	 * @param guildId
-	 * 		the guild id
-	 *
-	 * @return
-	 * 		the {@link AudioMusicPlayer}
-	 */
-	public Optional<AudioMusicPlayer> getMusicPlayer(Snowflake guildId)
-	{
-		return Optional.ofNullable(musicPlayers.get(guildId));
-	}
+    /**
+     * Gets the {@link AudioMusicPlayer} associated with the specified guild id.
+     * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
+     *
+     * @param guildId the guild id
+     * @return the {@link AudioMusicPlayer}
+     */
+    public Optional<AudioMusicPlayer> getMusicPlayer(Snowflake guildId)
+    {
+        return Optional.ofNullable(musicPlayers.get(guildId));
+    }
 
-	/**
-	 * A {@link TrackScheduler} which updates the "Now playing"
-	 * text for the Kensa bot.
-	 *
-	 * Note that this class is not really suited for if Kensa
-	 * is connected to multiple guilds, since the "Now playing"
-	 * text is global.
-	 *
-	 * Currently my use case is only for one Guild so I'm going
-	 * to use this for now since its a pretty sweet little function.
-	 */
-	private class ClientTrackScheduler
-		extends TrackScheduler
-	{
-		/**
-		 * @param player
-		 * 	The audio player this scheduler uses
-		 */
-		public ClientTrackScheduler(AudioPlayer player)
-		{
-			super(player);
-		}
+    /**
+     * A {@link TrackScheduler} which updates the "Now playing"
+     * text for the Kensa bot.
+     * <p>
+     * Note that this class is not really suited for if Kensa
+     * is connected to multiple guilds, since the "Now playing"
+     * text is global.
+     * <p>
+     * Currently my use case is only for one Guild so I'm going
+     * to use this for now since its a pretty sweet little function.
+     */
+    private class ClientTrackScheduler
+        extends TrackScheduler
+    {
+        /**
+         * @param player The audio player this scheduler uses
+         */
+        public ClientTrackScheduler(AudioPlayer player)
+        {
+            super(player);
+        }
 
-		@Override
-		public void onTrackStart(AudioPlayer player, AudioTrack track)
-		{
-			super.onTrackStart(player, track);
-			setTrackPlayingStatus(track);
-		}
+        @Override
+        public void onTrackStart(AudioPlayer player, AudioTrack track)
+        {
+            super.onTrackStart(player, track);
+            setTrackPlayingStatus(track);
+        }
 
-		@Override
-		public void onPlayerPause(AudioPlayer player)
-		{
-			super.onPlayerPause(player);
-			clearTrackPlayingStatus();
-		}
+        @Override
+        public void onPlayerPause(AudioPlayer player)
+        {
+            super.onPlayerPause(player);
+            clearTrackPlayingStatus();
+        }
 
-		@Override
-		public void onPlayerResume(AudioPlayer player)
-		{
-			super.onPlayerResume(player);
+        @Override
+        public void onPlayerResume(AudioPlayer player)
+        {
+            super.onPlayerResume(player);
 
-			var track = player.getPlayingTrack();
+            var track = player.getPlayingTrack();
 
-			if (track != null){
-				setTrackPlayingStatus(track);
-			}
-		}
+            if (track != null)
+            {
+                setTrackPlayingStatus(track);
+            }
+        }
 
-		@Override
-		public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
-		{
-			if(!hasNextTrack())
-			{
-				clearTrackPlayingStatus();
-			}
-			super.onTrackEnd(player, track, endReason);
-		}
+        @Override
+        public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
+        {
+            if (!hasNextTrack())
+            {
+                clearTrackPlayingStatus();
+            }
+            super.onTrackEnd(player, track, endReason);
+        }
 
-		private void clearTrackPlayingStatus()
-		{
-			client.updatePresence(ClientPresence.online()).subscribe();
-		}
+        private void clearTrackPlayingStatus()
+        {
+            client.updatePresence(ClientPresence.online()).subscribe();
+        }
 
-		private void setTrackPlayingStatus(AudioTrack track)
-		{
-			client.updatePresence(ClientPresence.online(ClientActivity.playing(TrackUtils.getReadableTrack(track))))
-				.subscribe();
-		}
-	}
+        private void setTrackPlayingStatus(AudioTrack track)
+        {
+            client.updatePresence(ClientPresence.online(ClientActivity.playing(TrackUtils.getReadableTrack(track))))
+                .subscribe();
+        }
+    }
 }

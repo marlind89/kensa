@@ -8,9 +8,9 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class ShufflePlaylistEvent extends KensaRadioEvent
 {
-	public ShufflePlaylistEvent(GatewayDiscordClient client,
-		TextChannel textChannel)
-	{
-		super(client, textChannel);
-	}
+    public ShufflePlaylistEvent(GatewayDiscordClient client,
+        TextChannel textChannel)
+    {
+        super(client, textChannel);
+    }
 }

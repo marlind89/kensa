@@ -8,16 +8,16 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class PauseEvent extends KensaRadioEvent
 {
-	private final String shouldPause;
+    private final String shouldPause;
 
-	public PauseEvent(GatewayDiscordClient client, TextChannel channel, String shouldPause)
-	{
-		super(client, channel);
-		this.shouldPause = shouldPause;
-	}
+    public PauseEvent(GatewayDiscordClient client, TextChannel channel, String shouldPause)
+    {
+        super(client, channel);
+        this.shouldPause = shouldPause;
+    }
 
-	public String shouldPause()
-	{
-		return shouldPause;
-	}
+    public String shouldPause()
+    {
+        return shouldPause;
+    }
 }

@@ -9,16 +9,16 @@ import discord4j.core.object.entity.channel.TextChannel;
  */
 public class InsultEvent extends KensaEvent
 {
-	private final Member member;
+    private final Member member;
 
-	public InsultEvent(GatewayDiscordClient client, TextChannel textChannel, Member member)
-	{
-		super(client, textChannel);
-		this.member = member;
-	}
+    public InsultEvent(GatewayDiscordClient client, TextChannel textChannel, Member member)
+    {
+        super(client, textChannel);
+        this.member = member;
+    }
 
-	public Member getUser()
-	{
-		return member;
-	}
+    public Member getUser()
+    {
+        return member;
+    }
 }

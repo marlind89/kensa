@@ -100,9 +100,8 @@ public class YoutubeBestMatchAudioTrack
         {
             return null;
         }
-        else if (audioItem instanceof AudioPlaylist)
+        else if (audioItem instanceof AudioPlaylist audioPlaylist)
         {
-            AudioPlaylist audioPlaylist = (AudioPlaylist) audioItem;
 
             // The number of matches is limited to reduce the chances of matching against
             // less than optimal results.

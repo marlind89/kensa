@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Singleton
-public class VoiceConnections {
+public class VoiceConnections
+{
 
     private static final Logger logger = LoggerFactory.getLogger(VoiceConnections.class);
 
@@ -30,26 +31,29 @@ public class VoiceConnections {
 
     @Inject
     public VoiceConnections(AudioPlayerManager audioPlayerManager,
-        MusicPlayerManager musicPlayerManager) {
+        MusicPlayerManager musicPlayerManager)
+    {
         this.musicPlayerManager = musicPlayerManager;
     }
 
     /**
      * Join a voice channel reactively and start auto-leave monitoring.
      */
-    public Mono<VoiceConnection> join(AudioChannel voiceChannel) {
+    public Mono<VoiceConnection> join(AudioChannel voiceChannel)
+    {
         logger.info("Joining voice channel: {}", voiceChannel.getName());
         var guildId = voiceChannel.getGuildId();
         var audioMusicPlayer = musicPlayerManager.getOrCreateMusicPlayer(guildId);
         AudioProvider provider = new LavaPlayerAudioProvider(audioMusicPlayer.audioPlayer());
-			
+
         return voiceChannel.join(AudioChannelJoinSpec.builder()
-            .provider(provider)
-            .build())
-            .flatMap(vc -> {
+                .provider(provider)
+                .build())
+            .flatMap(vc ->
+            {
                 var acc = new AudioChannelConnection(vc, voiceChannel, audioMusicPlayer.musicPlayer());
                 activeConnections.put(guildId, acc);
-				acc.musicPlayer().pause(false);
+                acc.musicPlayer().pause(false);
                 // Monitor channel for auto-leave
                 return monitorAndAutoLeave(acc, voiceChannel).thenReturn(vc);
             });
@@ -59,28 +63,32 @@ public class VoiceConnections {
      * Disconnect from the voice channel by guild ID reactively.
      * Emits the previous AudioChannelConnection (or completes empty if none).
      */
-    public Mono<AudioChannelConnection> disconnect(Snowflake guildId) {
+    public Mono<AudioChannelConnection> disconnect(Snowflake guildId)
+    {
         AudioChannelConnection acc = activeConnections.remove(guildId);
-        if (acc == null) {
+        if (acc == null)
+        {
             return Mono.empty();
         }
         // Convert existing value (already emitted) to Mono and perform disconnect
         return acc.voiceConnection().disconnect()
-            .doOnSuccess(x -> {
-				logger.info("Disconnected from voice channel: {}", acc.audioChannel().getName());
-				acc.musicPlayer().pause(true);
-			})
+            .doOnSuccess(x ->
+            {
+                logger.info("Disconnected from voice channel: {}", acc.audioChannel().getName());
+                acc.musicPlayer().pause(true);
+            })
             .thenReturn(acc);
     }
 
     /**
      * Reconnect to a voice channel, optionally disconnecting first.
      */
-    public Mono<VoiceConnection> reconnect(AudioChannel audioChannel, boolean disconnectFirst) {
+    public Mono<VoiceConnection> reconnect(AudioChannel audioChannel, boolean disconnectFirst)
+    {
         Mono<Void> pre = disconnectFirst
             ? disconnect(audioChannel.getGuildId())
-                .delayElement(Duration.ofSeconds(5L)) // Wait a bit before rejoining
-                .then()
+            .delayElement(Duration.ofSeconds(5L)) // Wait a bit before rejoining
+            .then()
             : Mono.empty();
 
         return pre.then(Mono.defer(() -> join(audioChannel)));
@@ -89,7 +97,8 @@ public class VoiceConnections {
     /**
      * Monitor the voice channel and disconnect when bot is alone.
      */
-    private Mono<Void> monitorAndAutoLeave(AudioChannelConnection acc, AudioChannel channel) {
+    private Mono<Void> monitorAndAutoLeave(AudioChannelConnection acc, AudioChannel channel)
+    {
         // The bot itself has a VoiceState; 1 VoiceState signals bot is alone
         var voiceStateCounter = channel.getVoiceStates()
             .count()
@@ -101,7 +110,8 @@ public class VoiceConnections {
             .then();
 
         var onEvent = channel.getClient().getEventDispatcher().on(VoiceStateUpdateEvent.class)
-            .filter(event -> event.getOld().flatMap(VoiceState::getChannelId).map(channel.getId()::equals).orElse(false))
+            .filter(
+                event -> event.getOld().flatMap(VoiceState::getChannelId).map(channel.getId()::equals).orElse(false))
             .delaySequence(Duration.ofSeconds((10L)))
             .filterWhen(ignored -> voiceStateCounter)
             .next()

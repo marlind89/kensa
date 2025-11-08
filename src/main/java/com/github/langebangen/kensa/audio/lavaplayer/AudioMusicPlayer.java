@@ -6,4 +6,6 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 public record AudioMusicPlayer(
     AudioPlayer audioPlayer,
     MusicPlayer musicPlayer
-) {}
+)
+{
+}

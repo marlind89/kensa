@@ -19,44 +19,44 @@ import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBu
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 
 public class LavaplayerModule
-	extends AbstractModule
+    extends AbstractModule
 {
 
-	@Override
-	protected void configure()
-	{
-		bind(YoutubeSearchProvider.class).toInstance(new YoutubeSearchProvider());
-	}
+    @Override
+    protected void configure()
+    {
+        bind(YoutubeSearchProvider.class).toInstance(new YoutubeSearchProvider());
+    }
 
-	@Provides
-	@Singleton
-	public YoutubeAudioSourceManager provideYoutubeAudioSourceManager(YoutubeConfig config)
-	{
-		var ytSourceManager =  new YoutubeAudioSourceManager(true);
-		ytSourceManager.useOauth2(config.token(), false);
-		return ytSourceManager;
-	}
+    @Provides
+    @Singleton
+    public YoutubeAudioSourceManager provideYoutubeAudioSourceManager(YoutubeConfig config)
+    {
+        var ytSourceManager = new YoutubeAudioSourceManager(true);
+        ytSourceManager.useOauth2(config.token(), false);
+        return ytSourceManager;
+    }
 
 
-	@Provides
-	@Singleton
-	public AudioPlayerManager provideAudioPlayerManager(
-		YoutubeAudioSourceManager ytSourceManager,
-		SpotifySourceManager spotifySourceManager,
-		SunoSourceManager sunoSourceManager)
-	{
-		DefaultAudioPlayerManager playerManager = new DefaultAudioPlayerManager();
-		playerManager.registerSourceManager(ytSourceManager);
+    @Provides
+    @Singleton
+    public AudioPlayerManager provideAudioPlayerManager(
+        YoutubeAudioSourceManager ytSourceManager,
+        SpotifySourceManager spotifySourceManager,
+        SunoSourceManager sunoSourceManager)
+    {
+        DefaultAudioPlayerManager playerManager = new DefaultAudioPlayerManager();
+        playerManager.registerSourceManager(ytSourceManager);
 //		playerManager.registerSourceManager(new SoundCloudAudioSourceManager());
-		playerManager.registerSourceManager(new BandcampAudioSourceManager());
-		playerManager.registerSourceManager(new VimeoAudioSourceManager());
-		playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
-		playerManager.registerSourceManager(new BeamAudioSourceManager());
-		playerManager.registerSourceManager(sunoSourceManager);
-		playerManager.registerSourceManager(new HttpAudioSourceManager());
-		playerManager.registerSourceManager(spotifySourceManager);
-		AudioSourceManagers.registerLocalSource(playerManager);
-		playerManager.getConfiguration().setFrameBufferFactory((NonAllocatingAudioFrameBuffer::new));
-		return playerManager;
-	}
+        playerManager.registerSourceManager(new BandcampAudioSourceManager());
+        playerManager.registerSourceManager(new VimeoAudioSourceManager());
+        playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
+        playerManager.registerSourceManager(new BeamAudioSourceManager());
+        playerManager.registerSourceManager(sunoSourceManager);
+        playerManager.registerSourceManager(new HttpAudioSourceManager());
+        playerManager.registerSourceManager(spotifySourceManager);
+        AudioSourceManagers.registerLocalSource(playerManager);
+        playerManager.getConfiguration().setFrameBufferFactory((NonAllocatingAudioFrameBuffer::new));
+        return playerManager;
+    }
 }

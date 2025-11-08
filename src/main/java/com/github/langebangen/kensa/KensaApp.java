@@ -38,90 +38,90 @@ import java.util.concurrent.TimeUnit;
  */
 public class KensaApp
 {
-	private static final Logger logger = LoggerFactory.getLogger(KensaApp.class);
+    private static final Logger logger = LoggerFactory.getLogger(KensaApp.class);
 
-	/**
-	 * Main method.
-	 *
-	 * @param args
-	 *      the arguments, should contain the bot token.
-	 */
-	public static void main(String[] args)
-	{
-		try
-		{
-			long voiceChannelId = 0;
-			if (args.length > 0)
-			{
-				String voiceChannelToConnectTo = args[0];
-				if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
-				{
-					voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
-					logger.info("Started with an existing voice channel id: " + voiceChannelId);
-				}
-			}
-
-			ConfigFilesProvider configFilesProvider = () -> Collections
-				.singletonList(Paths.get(System.getProperty("user.dir"), "config.yaml"));
-
-			ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
-			ConfigurationProvider provider = new ConfigurationProviderBuilder()
-				.withConfigurationSource(source)
-				.withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
-				.build();
-
-			Hooks.onOperatorDebug();
-
-			Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
-			GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
-
-			registerListeners(injector);
-			initializeScheduler(injector);
-
-			Runtime.getRuntime().addShutdownHook(new Thread(
-				() -> gateway.logout().block(Duration.ofSeconds(10)))
-			);
-
-			gateway.onDisconnect().block();
-		}
-		catch(Exception e){
-			System.out.println(e);
-		}
-
-	}
-
-	private static void initializeScheduler(Injector injector)
-		throws SchedulerException
+    /**
+     * Main method.
+     *
+     * @param args the arguments, should contain the bot token.
+     */
+    public static void main(String[] args)
     {
-		var factory = new StdSchedulerFactory();
-		var scheduler = factory.getScheduler();
+        try
+        {
+            long voiceChannelId = 0;
+            if (args.length > 0)
+            {
+                String voiceChannelToConnectTo = args[0];
+                if (voiceChannelToConnectTo != null && !voiceChannelToConnectTo.isEmpty())
+                {
+                    voiceChannelId = Long.parseLong(voiceChannelToConnectTo);
+                    logger.info("Started with an existing voice channel id: " + voiceChannelId);
+                }
+            }
 
-		scheduler.setJobFactory(new GuiceJobFactory(injector));
+            ConfigFilesProvider configFilesProvider = () -> Collections
+                .singletonList(Paths.get(System.getProperty("user.dir"), "config.yaml"));
 
-		var job = JobBuilder.newJob(UpdateMessagesOnDiskJob.class)
-				.withIdentity("updateMessagesOnDiskJob", "group1")
-				.build();
+            ConfigurationSource source = new FilesConfigurationSource(configFilesProvider);
+            ConfigurationProvider provider = new ConfigurationProviderBuilder()
+                .withConfigurationSource(source)
+                .withReloadStrategy(new PeriodicalReloadStrategy(5, TimeUnit.SECONDS))
+                .build();
 
-		var immediateTrigger = TriggerBuilder.newTrigger()
-				.withIdentity("immediateTrigger", "group1")
-				.startNow()
-				.build();
+            Hooks.onOperatorDebug();
 
-		var dailyTrigger = TriggerBuilder.newTrigger()
-				.withIdentity("dailyTrigger", "group1")
-				.withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(4, 0))
-				.build();
+            Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
+            GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
 
-		scheduler.scheduleJob(job, Set.of(immediateTrigger, dailyTrigger), true);
+            registerListeners(injector);
+            initializeScheduler(injector);
 
-		scheduler.start();
-	}
+            Runtime.getRuntime().addShutdownHook(new Thread(
+                () -> gateway.logout().block(Duration.ofSeconds(10)))
+            );
 
-	private static void registerListeners(Injector injector)
-	{
-		injector.getInstance(EventListener.class);
-		injector.getInstance(RadioListener.class);
-		injector.getInstance(TextChannelListener.class);
-		injector.getInstance(VoiceChannelListener.class);
-	}
+            gateway.onDisconnect().block();
+        }
+        catch (Exception e)
+        {
+            System.out.println(e);
+        }
+
+    }
+
+    private static void initializeScheduler(Injector injector)
+        throws SchedulerException
+    {
+        var factory = new StdSchedulerFactory();
+        var scheduler = factory.getScheduler();
+
+        scheduler.setJobFactory(new GuiceJobFactory(injector));
+
+        var job = JobBuilder.newJob(UpdateMessagesOnDiskJob.class)
+            .withIdentity("updateMessagesOnDiskJob", "group1")
+            .build();
+
+        var immediateTrigger = TriggerBuilder.newTrigger()
+            .withIdentity("immediateTrigger", "group1")
+            .startNow()
+            .build();
+
+        var dailyTrigger = TriggerBuilder.newTrigger()
+            .withIdentity("dailyTrigger", "group1")
+            .withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(4, 0))
+            .build();
+
+        scheduler.scheduleJob(job, Set.of(immediateTrigger, dailyTrigger), true);
+
+        scheduler.start();
+    }
+
+    private static void registerListeners(Injector injector)
+    {
+        injector.getInstance(EventListener.class);
+        injector.getInstance(RadioListener.class);
+        injector.getInstance(TextChannelListener.class);
+        injector.getInstance(VoiceChannelListener.class);
+    }
 }

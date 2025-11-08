@@ -9,5 +9,6 @@ public record SunoPlaylistSchema(
     String name,
     String descriptionm,
     String user_display_name
-) {
+)
+{
 }

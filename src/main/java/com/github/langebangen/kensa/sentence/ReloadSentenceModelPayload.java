@@ -7,11 +7,13 @@ public class ReloadSentenceModelPayload
     @JsonProperty("messagesFilename")
     private String messagesFilename;
 
-    public String getMessagesFilename() {
+    public String getMessagesFilename()
+    {
         return messagesFilename;
     }
 
-    public void setMessagesFilename(String messagesFilename) {
+    public void setMessagesFilename(String messagesFilename)
+    {
         this.messagesFilename = messagesFilename;
     }
 }

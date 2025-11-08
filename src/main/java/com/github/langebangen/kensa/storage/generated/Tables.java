@@ -11,8 +11,9 @@ import com.github.langebangen.kensa.storage.generated.tables.Message;
 /**
  * Convenience access to all tables in public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
-public class Tables {
+@SuppressWarnings({"all", "unchecked", "rawtypes", "this-escape"})
+public class Tables
+{
 
     /**
      * The table <code>public.insult</code>.

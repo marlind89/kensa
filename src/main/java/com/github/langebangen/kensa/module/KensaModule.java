@@ -25,138 +25,143 @@ import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
+
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 /**
  * @author Martin.
  */
 public class KensaModule
-	extends AbstractModule
+    extends AbstractModule
 {
-	private static final Logger logger = LoggerFactory.getLogger(KensaModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(KensaModule.class);
 
-	private long voiceChannelId;
-	private final ConfigurationProvider configProvider;
+    private final long voiceChannelId;
+    private final ConfigurationProvider configProvider;
 
-	public KensaModule(long voiceChannelId,
-		ConfigurationProvider configProvider)
-	{
-		this.voiceChannelId = voiceChannelId;
-		this.configProvider = configProvider;
-	}
+    public KensaModule(long voiceChannelId,
+        ConfigurationProvider configProvider)
+    {
+        this.voiceChannelId = voiceChannelId;
+        this.configProvider = configProvider;
+    }
 
-	@Override
-	protected void configure()
-	{
-		install(new LavaplayerModule());
+    @Override
+    protected void configure()
+    {
+        install(new LavaplayerModule());
 
-		bindConstant().annotatedWith(Names.named("latestVoiceChannelId")).to(voiceChannelId);
-		bind(DatabaseConfig.class).toInstance(configProvider
-			.bind("database", DatabaseConfig.class));
-		bind(SpotifyApiConfig.class).toInstance(configProvider
-			.bind("spotify", SpotifyApiConfig.class));
-		bind(DiscordConfig.class).toInstance(configProvider
-			.bind("discord", DiscordConfig.class));
-		bind(YoutubeConfig.class).toInstance(configProvider
-			.bind("youtube", YoutubeConfig.class));
-		bind(SentenceGeneratorConfig.class).toInstance(configProvider
-			.bind("sentenceGenerator", SentenceGeneratorConfig.class));
-		bind(SunoConfig.class).toInstance(configProvider
-			.bind("suno", SunoConfig.class));
+        bindConstant().annotatedWith(Names.named("latestVoiceChannelId")).to(voiceChannelId);
+        bind(DatabaseConfig.class).toInstance(configProvider
+            .bind("database", DatabaseConfig.class));
+        bind(SpotifyApiConfig.class).toInstance(configProvider
+            .bind("spotify", SpotifyApiConfig.class));
+        bind(DiscordConfig.class).toInstance(configProvider
+            .bind("discord", DiscordConfig.class));
+        bind(YoutubeConfig.class).toInstance(configProvider
+            .bind("youtube", YoutubeConfig.class));
+        bind(SentenceGeneratorConfig.class).toInstance(configProvider
+            .bind("sentenceGenerator", SentenceGeneratorConfig.class));
+        bind(SunoConfig.class).toInstance(configProvider
+            .bind("suno", SunoConfig.class));
 
-	}
+    }
 
-	@Provides
-	@Singleton
-	public DiscordClient getDiscordClient(DiscordConfig discordConfig)
-	{
-		return DiscordClientBuilder.create(discordConfig.token())
-			// Suppress 404s globally
-			.onClientResponse(ResponseFunction.emptyIfNotFound())
+    @Provides
+    @Singleton
+    public DiscordClient getDiscordClient(DiscordConfig discordConfig)
+    {
+        return DiscordClientBuilder.create(discordConfig.token())
+            // Suppress 404s globally
+            .onClientResponse(ResponseFunction.emptyIfNotFound())
 
-			// Suppress 400 Bad Request errors when adding reactions
-			.onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
+            // Suppress 400 Bad Request errors when adding reactions
+            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
 
-			// Global retry handler for all routes
-			.onClientResponse(ResponseFunction.retryWhen(
-				RouteMatcher.any(),
-				Retry
-					.backoff(5, Duration.ofSeconds(2)) // retry up to 5 times, starting at 2s
-					.maxBackoff(Duration.ofSeconds(10)) // cap at 10s delay
-					.jitter(0.5) // ±50% randomization
-					.filter(throwable -> {
-						// Retry on HTTP 5xx
-						if (throwable instanceof ClientException ce) {
-							int code = ce.getStatus().code();
-							return code >= 500 && code < 600;
-						}
-						// Retry on transient network errors
-						return throwable instanceof Errors.NativeIoException;
-					})
-			))
-			.build();
+            // Global retry handler for all routes
+            .onClientResponse(ResponseFunction.retryWhen(
+                RouteMatcher.any(),
+                Retry
+                    .backoff(5, Duration.ofSeconds(2)) // retry up to 5 times, starting at 2s
+                    .maxBackoff(Duration.ofSeconds(10)) // cap at 10s delay
+                    .jitter(0.5) // ±50% randomization
+                    .filter(throwable ->
+                    {
+                        // Retry on HTTP 5xx
+                        if (throwable instanceof ClientException ce)
+                        {
+                            int code = ce.getStatus().code();
+                            return code >= 500 && code < 600;
+                        }
+                        // Retry on transient network errors
+                        return throwable instanceof Errors.NativeIoException;
+                    })
+            ))
+            .build();
 
-	}
+    }
 
-	@Provides
-	@Singleton
-	public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client){
-		return client
-				.gateway()
-				.setEnabledIntents(IntentSet.all())
-				.login()
-				.block();
-	}
+    @Provides
+    @Singleton
+    public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client)
+    {
+        return client
+            .gateway()
+            .setEnabledIntents(IntentSet.all())
+            .login()
+            .block();
+    }
 
-	@Provides
-	@Singleton
-	public SpotifyApi getSpotifyApi(SpotifyApiConfig spotifyApiConfig)
-	{
-		SpotifyApi spotifyApi = new SpotifyApi.Builder()
-			.setClientId(spotifyApiConfig.clientId())
-			.setClientSecret(spotifyApiConfig.clientSecret())
-			.build();
+    @Provides
+    @Singleton
+    public SpotifyApi getSpotifyApi(SpotifyApiConfig spotifyApiConfig)
+    {
+        SpotifyApi spotifyApi = new SpotifyApi.Builder()
+            .setClientId(spotifyApiConfig.clientId())
+            .setClientSecret(spotifyApiConfig.clientSecret())
+            .build();
 
-		ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-		Runnable getAccessTokenRunnable = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					ClientCredentialsRequest ccRequest = spotifyApi.clientCredentials().build();
-					ClientCredentials cc = ccRequest.execute();
-					spotifyApi.setAccessToken(cc.getAccessToken());
-					// Renew the access token two minutes before it expires
-					executorService.schedule(this, (Math.max(1,
-						cc.getExpiresIn() - 60*2)), TimeUnit.SECONDS);
-					logger.info("Renewed Spotify access token");
-				}
-				catch(IOException | SpotifyWebApiException | ParseException e)
-				{
-					logger.error("Failed to retrieve access token from Spotify", e);
-				}
-			}
-		};
-		getAccessTokenRunnable.run();
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        Runnable getAccessTokenRunnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    ClientCredentialsRequest ccRequest = spotifyApi.clientCredentials().build();
+                    ClientCredentials cc = ccRequest.execute();
+                    spotifyApi.setAccessToken(cc.getAccessToken());
+                    // Renew the access token two minutes before it expires
+                    executorService.schedule(this, (Math.max(1,
+                        cc.getExpiresIn() - 60 * 2)), TimeUnit.SECONDS);
+                    logger.info("Renewed Spotify access token");
+                }
+                catch (IOException | SpotifyWebApiException | ParseException e)
+                {
+                    logger.error("Failed to retrieve access token from Spotify", e);
+                }
+            }
+        };
+        getAccessTokenRunnable.run();
 
-		return spotifyApi;
-	}
+        return spotifyApi;
+    }
 
-	@Provides
-	public HttpClient provideHttpClient()
-	{
-		return HttpClient.newHttpClient();
-	}
+    @Provides
+    public HttpClient provideHttpClient()
+    {
+        return HttpClient.newHttpClient();
+    }
 
-	@Provides
-	public ObjectMapper provideObjectMapper()
-	{
-		return new ObjectMapper();
-	}
+    @Provides
+    public ObjectMapper provideObjectMapper()
+    {
+        return new ObjectMapper();
+    }
 }

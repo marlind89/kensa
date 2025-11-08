@@ -4,7 +4,9 @@ import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.voice.VoiceConnection;
 
 public record AudioChannelConnection(
-	VoiceConnection voiceConnection,
-	AudioChannel audioChannel,
-	MusicPlayer musicPlayer
-) {};
+    VoiceConnection voiceConnection,
+    AudioChannel audioChannel,
+    MusicPlayer musicPlayer
+)
+{
+}

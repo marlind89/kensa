@@ -11,29 +11,29 @@ import discord4j.gateway.ShardInfo;
  */
 public class KensaEvent extends Event
 {
-	private final TextChannel textChannel;
-	private Snowflake guildId;
+    private final TextChannel textChannel;
+    private Snowflake guildId;
 
-	public KensaEvent(GatewayDiscordClient client, TextChannel textChannel)
-	{
-		super(client, ShardInfo.create(0, 1));
-		this.textChannel = textChannel;
-	}
+    public KensaEvent(GatewayDiscordClient client, TextChannel textChannel)
+    {
+        super(client, ShardInfo.create(0, 1));
+        this.textChannel = textChannel;
+    }
 
-	public TextChannel getTextChannel()
-	{
-		return textChannel;
-	}
+    public TextChannel getTextChannel()
+    {
+        return textChannel;
+    }
 
-	public Snowflake getGuildId()
-	{
-		return textChannel != null
-			? textChannel.getGuildId()
-			: guildId;
-	}
+    public Snowflake getGuildId()
+    {
+        return textChannel != null
+            ? textChannel.getGuildId()
+            : guildId;
+    }
 
-	protected void setGuildId(Snowflake guildId)
-	{
-		this.guildId = guildId;
-	}
+    protected void setGuildId(Snowflake guildId)
+    {
+        this.guildId = guildId;
+    }
 }

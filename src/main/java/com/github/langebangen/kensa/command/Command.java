@@ -9,74 +9,72 @@ import java.util.Optional;
  */
 public class Command
 {
-	private final Action action;
-	private final String argument;
+    private final Action action;
+    private final String argument;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param action
-	 *      the {@link Action}
-	 * @param argument
-	 *      the argument
-	 */
-	public Command(Action action, String argument)
-	{
-		this.action = action;
-		this.argument = argument;
-	}
+    /**
+     * Constructor.
+     *
+     * @param action   the {@link Action}
+     * @param argument the argument
+     */
+    public Command(Action action, String argument)
+    {
+        this.action = action;
+        this.argument = argument;
+    }
 
-	/**
-	 * Gets the {@link Action}
-	 *
-	 * @return action
-	 *      the {@link Action}
-	 */
-	public Action getAction()
-	{
-		return action;
-	}
+    /**
+     * Gets the {@link Action}
+     *
+     * @return action
+     * the {@link Action}
+     */
+    public Action getAction()
+    {
+        return action;
+    }
 
-	/**
-	 * Gets the argument.
-	 *
-	 * @return argument
-	 *      the argument
-	 */
-	public String getArgument()
-	{
-		return argument;
-	}
+    /**
+     * Gets the argument.
+     *
+     * @return argument
+     * the argument
+     */
+    public String getArgument()
+    {
+        return argument;
+    }
 
-	public static Command parseCommand(Optional<String> value){
-		return value.map(Command::parseCommand).orElse(null);
-	}
-	/**
-	 * Parses the specified value into a {@link Command}
-	 * and returns it.
-	 *
-	 * @param value
-	 *      the value to parse.
-	 *
-	 * @return command
-	 *      the {@link Command}, or null if it was not
-	 *      possible to parse the specified value.
-	 */
-	public static Command parseCommand(String value)
-	{
-		if(!value.isEmpty())
-		{
-			String[] commands = value.split(" ");
-			String actionString = commands[0];
-			Action action = Action.getAction(actionString);
-			if(action != null)
-			{
-				return new Command(action, commands.length > 1
-						? value.substring(1 + actionString.length() + value.indexOf(commands[0]))
-						: null);
-			}
-		}
+    public static Command parseCommand(Optional<String> value)
+    {
+        return value.map(Command::parseCommand).orElse(null);
+    }
 
-		return null;
-	}
+    /**
+     * Parses the specified value into a {@link Command}
+     * and returns it.
+     *
+     * @param value the value to parse.
+     * @return command
+     * the {@link Command}, or null if it was not
+     * possible to parse the specified value.
+     */
+    public static Command parseCommand(String value)
+    {
+        if (!value.isEmpty())
+        {
+            String[] commands = value.split(" ");
+            String actionString = commands[0];
+            Action action = Action.getAction(actionString);
+            if (action != null)
+            {
+                return new Command(action, commands.length > 1
+                    ? value.substring(1 + actionString.length() + value.indexOf(commands[0]))
+                    : null);
+            }
+        }
+
+        return null;
+    }
 }

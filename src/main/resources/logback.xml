@@ -9,7 +9,7 @@
     <!-- Suppress unsupported packet type errors -->
     <logger name="discord4j.voice.LocalVoiceReceiveTask" level="OFF"/>
     <logger name="discord4j.voice.PacketTransformer" level="OFF"/>
-    
+
     <!-- Display the logs in your console with the following format -->
     <!-- You can learn more about this here: https://logback.qos.ch/manual/layouts.html#ClassicPatternLayout -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

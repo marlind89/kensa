@@ -4,10 +4,10 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.channel.TextChannel;
 
 public class ReconnectVoiceChannelEvent
-	extends KensaEvent
+    extends KensaEvent
 {
-	public ReconnectVoiceChannelEvent(GatewayDiscordClient client, TextChannel channel)
-	{
-		super(client, channel);
-	}
+    public ReconnectVoiceChannelEvent(GatewayDiscordClient client, TextChannel channel)
+    {
+        super(client, channel);
+    }
 }
