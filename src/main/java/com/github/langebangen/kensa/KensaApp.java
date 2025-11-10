@@ -1,11 +1,8 @@
 package com.github.langebangen.kensa;
 
+import com.github.langebangen.kensa.event.EventHandlerRegistrar;
 import com.github.langebangen.kensa.job.GuiceJobFactory;
 import com.github.langebangen.kensa.job.UpdateMessagesOnDiskJob;
-import com.github.langebangen.kensa.listener.EventListener;
-import com.github.langebangen.kensa.listener.RadioListener;
-import com.github.langebangen.kensa.listener.TextChannelListener;
-import com.github.langebangen.kensa.listener.VoiceChannelListener;
 import com.github.langebangen.kensa.module.KensaModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -74,7 +71,8 @@ public class KensaApp
             Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
             GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
 
-            registerListeners(injector);
+            EventHandlerRegistrar.register(gateway.getEventDispatcher(), injector);
+
             initializeScheduler(injector);
 
             Runtime.getRuntime().addShutdownHook(new Thread(
@@ -115,13 +113,5 @@ public class KensaApp
         scheduler.scheduleJob(job, Set.of(immediateTrigger, dailyTrigger), true);
 
         scheduler.start();
-    }
-
-    private static void registerListeners(Injector injector)
-    {
-        injector.getInstance(EventListener.class);
-        injector.getInstance(RadioListener.class);
-        injector.getInstance(TextChannelListener.class);
-        injector.getInstance(VoiceChannelListener.class);
     }
 }

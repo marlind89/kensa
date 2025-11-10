@@ -1,7 +1,7 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
-import com.github.langebangen.kensa.listener.event.KensaEvent;
+import com.github.langebangen.kensa.event.KensaEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.github.langebangen.kensa.youtube.YoutubeApiService;
 import com.google.inject.Inject;
@@ -43,17 +43,6 @@ public class MusicPlayerManager
         this.youtubeApiService = youtubeApiService;
     }
 
-    /**
-     * Gets the {@link AudioMusicPlayer} associated with the specified {@link KensaEvent}.
-     * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
-     *
-     * @param event the {@link KensaEvent}
-     * @return the {@link AudioMusicPlayer}
-     */
-    public Optional<AudioMusicPlayer> getMusicPlayer(KensaEvent event)
-    {
-        return getMusicPlayer(event.getGuildId());
-    }
 
     public AudioMusicPlayer getOrCreateMusicPlayer(Snowflake guildId)
     {
@@ -70,16 +59,20 @@ public class MusicPlayerManager
         });
     }
 
-    /**
-     * Gets the {@link AudioMusicPlayer} associated with the specified guild id.
-     * If no such {@link AudioMusicPlayer} exists then it is created and the returned.
-     *
-     * @param guildId the guild id
-     * @return the {@link AudioMusicPlayer}
-     */
-    public Optional<AudioMusicPlayer> getMusicPlayer(Snowflake guildId)
+    public Optional<AudioMusicPlayer> getAudioMusicPlayer(Snowflake guildId)
     {
         return Optional.ofNullable(musicPlayers.get(guildId));
+    }
+
+    public Optional<MusicPlayer> getMusicPlayer(KensaEvent event)
+    {
+        return getMusicPlayer(event.getGuildId());
+    }
+
+
+    public Optional<MusicPlayer> getMusicPlayer(Snowflake guildId)
+    {
+        return getAudioMusicPlayer(guildId).map(AudioMusicPlayer::musicPlayer);
     }
 
     /**

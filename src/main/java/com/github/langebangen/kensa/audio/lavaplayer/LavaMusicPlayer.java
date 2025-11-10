@@ -1,8 +1,8 @@
 package com.github.langebangen.kensa.audio.lavaplayer;
 
 import com.github.langebangen.kensa.audio.MusicPlayer;
-import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
-import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
+import com.github.langebangen.kensa.event.radio.track.play.PlayTrackEvent;
+import com.github.langebangen.kensa.event.search.SearchYoutubeEvent;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.github.langebangen.kensa.youtube.YoutubeApiService;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -40,7 +40,7 @@ public class LavaMusicPlayer
     }
 
     @Override
-    public void stream(PlayAudioEvent event)
+    public void stream(PlayTrackEvent event)
     {
         loadTrack(event.getSongIdentity(), event.getTextChannel(), event.isPlaylistRequest(),
             event.getPlayImmediately());
@@ -202,7 +202,7 @@ public class LavaMusicPlayer
                     if (channel != null)
                     {
                         channel.createMessage("Queued **" + playlist.getName()
-                                + " [" + playlist.getTracks().size() + " songs]**")
+                                              + " [" + playlist.getTracks().size() + " songs]**")
                             .subscribe();
                     }
 

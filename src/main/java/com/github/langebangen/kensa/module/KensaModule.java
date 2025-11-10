@@ -3,9 +3,12 @@ package com.github.langebangen.kensa.module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
 import com.github.langebangen.kensa.config.*;
+import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -18,6 +21,7 @@ import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
 import org.apache.hc.core5.http.ParseException;
 import org.cfg4j.provider.ConfigurationProvider;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.util.retry.Retry;
@@ -70,6 +74,22 @@ public class KensaModule
         bind(SunoConfig.class).toInstance(configProvider
             .bind("suno", SunoConfig.class));
 
+        var multibinder =
+            Multibinder.newSetBinder(binder(), new TypeLiteral<EventHandler>()
+            {
+            });
+
+        var reflections = new Reflections("com.github.langebangen.kensa.event");
+        for (var impl : reflections.getSubTypesOf(EventHandler.class))
+        {
+            // Skip abstract classes
+            if ((impl.getModifiers() & java.lang.reflect.Modifier.ABSTRACT) != 0)
+            {
+                continue;
+            }
+
+            multibinder.addBinding().to(impl);
+        }
     }
 
     @Provides

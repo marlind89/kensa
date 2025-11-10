@@ -1,8 +1,8 @@
 package com.github.langebangen.kensa.audio;
 
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
-import com.github.langebangen.kensa.listener.event.PlayAudioEvent;
-import com.github.langebangen.kensa.listener.event.SearchYoutubeEvent;
+import com.github.langebangen.kensa.event.radio.track.play.PlayTrackEvent;
+import com.github.langebangen.kensa.event.search.SearchYoutubeEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.object.entity.Guild;
 
@@ -23,9 +23,9 @@ public interface MusicPlayer
      * Streams the content located on the specified URL to the specified audioPlayer.
      * Will send a message that the content has been added to the playlist queue.
      *
-     * @param event the {@link PlayAudioEvent}
+     * @param event the {@link PlayTrackEvent}
      */
-    void stream(PlayAudioEvent event);
+    void stream(PlayTrackEvent event);
 
     /**
      * Searchs youtube with the specified {@link SearchYoutubeEvent}
