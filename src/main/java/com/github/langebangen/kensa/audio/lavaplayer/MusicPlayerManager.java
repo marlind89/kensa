@@ -30,27 +30,24 @@ public class MusicPlayerManager
     private final Map<Snowflake, AudioMusicPlayer> musicPlayers;
     private final AudioPlayerManager playerManager;
     private final YoutubeApiService youtubeApiService;
-    private final GatewayDiscordClient client;
 
     @Inject
-    private MusicPlayerManager(GatewayDiscordClient client,
-        AudioPlayerManager playerManager,
+    private MusicPlayerManager(AudioPlayerManager playerManager,
         YoutubeApiService youtubeApiService)
     {
-        this.client = client;
         this.musicPlayers = new HashMap<>();
         this.playerManager = playerManager;
         this.youtubeApiService = youtubeApiService;
     }
 
 
-    public AudioMusicPlayer getOrCreateMusicPlayer(Snowflake guildId)
+    public AudioMusicPlayer getOrCreateMusicPlayer(GatewayDiscordClient client, Snowflake guildId)
     {
         return musicPlayers.computeIfAbsent(guildId, id ->
         {
             AudioPlayer audioPlayer = playerManager.createPlayer();
             audioPlayer.setVolume(50);
-            TrackScheduler scheduler = new ClientTrackScheduler(audioPlayer);
+            TrackScheduler scheduler = new ClientTrackScheduler(client, audioPlayer);
             audioPlayer.addListener(scheduler);
 
             var musicPlayer = new LavaMusicPlayer(scheduler, playerManager, youtubeApiService);
@@ -89,12 +86,15 @@ public class MusicPlayerManager
     private class ClientTrackScheduler
         extends TrackScheduler
     {
+        private final GatewayDiscordClient client;
+
         /**
          * @param player The audio player this scheduler uses
          */
-        public ClientTrackScheduler(AudioPlayer player)
+        public ClientTrackScheduler(GatewayDiscordClient client, AudioPlayer player)
         {
             super(player);
+            this.client = client;
         }
 
         @Override

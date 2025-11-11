@@ -10,21 +10,11 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.gateway.intent.IntentSet;
-import discord4j.rest.http.client.ClientException;
-import discord4j.rest.request.RouteMatcher;
-import discord4j.rest.response.ResponseFunction;
-import discord4j.rest.route.Routes;
-import io.netty.channel.unix.Errors;
 import org.apache.hc.core5.http.ParseException;
 import org.cfg4j.provider.ConfigurationProvider;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.util.retry.Retry;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
@@ -32,7 +22,6 @@ import se.michaelthelin.spotify.requests.authorization.client_credentials.Client
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -90,51 +79,6 @@ public class KensaModule
 
             multibinder.addBinding().to(impl);
         }
-    }
-
-    @Provides
-    @Singleton
-    public DiscordClient getDiscordClient(DiscordConfig discordConfig)
-    {
-        return DiscordClientBuilder.create(discordConfig.token())
-            // Suppress 404s globally
-            .onClientResponse(ResponseFunction.emptyIfNotFound())
-
-            // Suppress 400 Bad Request errors when adding reactions
-            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400))
-
-            // Global retry handler for all routes
-            .onClientResponse(ResponseFunction.retryWhen(
-                RouteMatcher.any(),
-                Retry
-                    .backoff(5, Duration.ofSeconds(2)) // retry up to 5 times, starting at 2s
-                    .maxBackoff(Duration.ofSeconds(10)) // cap at 10s delay
-                    .jitter(0.5) // ±50% randomization
-                    .filter(throwable ->
-                    {
-                        // Retry on HTTP 5xx
-                        if (throwable instanceof ClientException ce)
-                        {
-                            int code = ce.getStatus().code();
-                            return code >= 500 && code < 600;
-                        }
-                        // Retry on transient network errors
-                        return throwable instanceof Errors.NativeIoException;
-                    })
-            ))
-            .build();
-
-    }
-
-    @Provides
-    @Singleton
-    public GatewayDiscordClient provideGatewayDiscordClient(DiscordClient client)
-    {
-        return client
-            .gateway()
-            .setEnabledIntents(IntentSet.all())
-            .login()
-            .block();
     }
 
     @Provides

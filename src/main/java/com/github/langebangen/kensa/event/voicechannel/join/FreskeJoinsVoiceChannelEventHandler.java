@@ -4,8 +4,6 @@ import com.github.langebangen.kensa.event.EventHandler;
 import com.github.langebangen.kensa.event.radio.track.play.PlayTrackEvent;
 import com.google.inject.Inject;
 import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import discord4j.core.object.VoiceState;
 import reactor.core.publisher.Flux;
@@ -16,65 +14,54 @@ import java.util.Random;
 
 public class FreskeJoinsVoiceChannelEventHandler implements EventHandler<VoiceStateUpdateEvent>
 {
-    private final GatewayDiscordClient client;
-    private final EventDispatcher dispatcher;
     private final Random random;
 
     @Inject
-    public FreskeJoinsVoiceChannelEventHandler(GatewayDiscordClient client)
+    public FreskeJoinsVoiceChannelEventHandler()
     {
-        this.client = client;
-        this.dispatcher = client.getEventDispatcher();
         this.random = new Random();
     }
 
     @Override
     public Flux<?> handle(Flux<VoiceStateUpdateEvent> events)
     {
-        return events
-            .filter(
-                x -> x.getCurrent().getUserId().equals(client.getSelfId()) && x.getCurrent().getChannelId().isPresent())
-            .switchMap(event ->
-            {
-                var currentVoiceChannelId = event.getCurrent().getChannelId().get();
-
-                return events
+        return events.publish(shared ->
+            shared
+                .filter(x -> x.getCurrent().getUserId().equals(x.getClient().getSelfId()) &&
+                             x.getCurrent().getChannelId().isPresent())
+                .switchMap(event -> shared
                     .filter(x ->
                     {
                         var current = x.getCurrent();
                         var old = x.getOld();
-
+                        var channelId = event.getCurrent().getChannelId().get();
                         return current.getUserId().equals(Snowflake.of("144085745320198154")) &&
                                current.getChannelId()
-                                   .map(chId -> chId.equals(currentVoiceChannelId))
+                                   .map(chId -> chId.equals(channelId))
                                    .orElse(false) &&
                                old
                                    .flatMap(VoiceState::getChannelId)
-                                   .map(oldChId -> !oldChId.equals(currentVoiceChannelId))
+                                   .map(oldChId -> !oldChId.equals(channelId))
                                    .orElse(true);
                     })
-                    .flatMap(x -> Mono.zip(
-                        Mono.justOrEmpty(x.getCurrent().getGuildId()),
-                        x.getCurrent().getMember()
-                    ));
-            })
-            .delayElements(Duration.ofMillis(500))
-            .doOnNext(tuple ->
-            {
-                var guildId = tuple.getT1();
-                var member = tuple.getT2();
+                    .flatMap(x -> Mono.justOrEmpty(x.getCurrent().getGuildId())
+                        .zipWith(x.getCurrent().getMember()))
+                    .map(t ->
+                    {
+                        var rand = random.nextInt(3);
+                        String soundFile = switch (rand)
+                        {
+                            case 0 -> "fredrik.mp3";
+                            case 1 -> "fredrik2.mp3";
+                            case 2 -> "hjalp.mp3";
+                            default -> throw new IllegalStateException("Unexpected value: " + rand);
+                        };
 
-                var rand = random.nextInt(3);
-                String soundFile = switch (rand)
-                {
-                    case 0 -> "fredrik.mp3";
-                    case 1 -> "fredrik2.mp3";
-                    case 2 -> "hjalp.mp3";
-                    default -> throw new IllegalStateException("Unexpected value: " + rand);
-                };
-
-                dispatcher.publish(new PlayTrackEvent(client, guildId,
-                    soundFile, false, member, true));
-            });
+                        return new PlayTrackEvent(event.getClient(), t.getT1(),
+                            soundFile, false, t.getT2(), true);
+                    })
+                )
+                .delayElements(Duration.ofMillis(500))
+                .doOnNext(e -> e.getClient().getEventDispatcher().publish(e)));
     }
 }

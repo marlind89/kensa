@@ -1,12 +1,14 @@
 package com.github.langebangen.kensa;
 
+import com.github.langebangen.kensa.config.DiscordConfig;
+import com.github.langebangen.kensa.discord.DiscordClientFactory;
 import com.github.langebangen.kensa.event.EventHandlerRegistrar;
 import com.github.langebangen.kensa.job.GuiceJobFactory;
 import com.github.langebangen.kensa.job.UpdateMessagesOnDiskJob;
 import com.github.langebangen.kensa.module.KensaModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import discord4j.core.GatewayDiscordClient;
+import discord4j.gateway.intent.IntentSet;
 import org.cfg4j.provider.ConfigurationProvider;
 import org.cfg4j.provider.ConfigurationProviderBuilder;
 import org.cfg4j.source.ConfigurationSource;
@@ -69,17 +71,26 @@ public class KensaApp
             Hooks.onOperatorDebug();
 
             Injector injector = Guice.createInjector(new KensaModule(voiceChannelId, provider));
-            GatewayDiscordClient gateway = injector.getInstance(GatewayDiscordClient.class);
-
-            EventHandlerRegistrar.register(gateway.getEventDispatcher(), injector);
 
             initializeScheduler(injector);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> gateway.logout().block(Duration.ofSeconds(10)))
-            );
+            var discordConfig = injector.getInstance(DiscordConfig.class);
+            var discordClient = DiscordClientFactory.createDiscordClient(discordConfig);
+            var eventHandlerRegistrar = injector.getInstance(EventHandlerRegistrar.class);
 
-            gateway.onDisconnect().block();
+            discordClient
+                .gateway()
+                .setEnabledIntents(IntentSet.all())
+                .withGateway(gateway ->
+                {
+                    Runtime.getRuntime().addShutdownHook(new Thread(
+                        () -> gateway.logout().block(Duration.ofSeconds(10)))
+                    );
+
+                    return eventHandlerRegistrar.register(gateway.getEventDispatcher());
+                })
+                .block();
+
         }
         catch (Exception e)
         {

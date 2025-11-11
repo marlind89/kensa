@@ -19,10 +19,7 @@ import com.github.langebangen.kensa.event.search.SearchYoutubeEvent;
 import com.github.langebangen.kensa.event.voicechannel.join.JoinVoiceChannelEvent;
 import com.github.langebangen.kensa.event.voicechannel.leave.LeaveVoiceChannelEvent;
 import com.github.langebangen.kensa.event.voicechannel.reconnect.ReconnectVoiceChannelEvent;
-import com.google.inject.Inject;
 import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
@@ -35,16 +32,6 @@ import java.util.Arrays;
 
 public class KensaEventDispatcher implements EventHandler<MessageCreateEvent>
 {
-    private final GatewayDiscordClient client;
-    private final EventDispatcher dispatcher;
-
-    @Inject
-    public KensaEventDispatcher(GatewayDiscordClient client)
-    {
-        this.client = client;
-        this.dispatcher = client.getEventDispatcher();
-    }
-
     @Override
     public Flux<?> handle(Flux<MessageCreateEvent> events)
     {
@@ -69,6 +56,7 @@ public class KensaEventDispatcher implements EventHandler<MessageCreateEvent>
                 TextChannel channel = zip.getT4();
                 Member member = zip.getT5();
                 String argument = command.getArgument();
+                var client = channel.getClient();
 
                 if (!hasPermission)
                 {
@@ -138,6 +126,6 @@ public class KensaEventDispatcher implements EventHandler<MessageCreateEvent>
                     default -> Mono.empty();
                 };
             })
-            .doOnNext(dispatcher::publish);
+            .doOnNext(e -> e.getClient().getEventDispatcher().publish(e));
     }
 }

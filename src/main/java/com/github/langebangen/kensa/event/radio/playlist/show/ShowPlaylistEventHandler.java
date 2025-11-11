@@ -5,8 +5,6 @@ import com.github.langebangen.kensa.event.EventHandler;
 import com.github.langebangen.kensa.util.TrackUtils;
 import com.google.inject.Inject;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.EventDispatcher;
 import discord4j.core.object.emoji.Emoji;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.TextChannel;
@@ -21,13 +19,11 @@ public class ShowPlaylistEventHandler implements EventHandler<ShowPlaylistEvent>
     public static final String NEXT_TRACK_EMOJI = "⏭";
 
     private final MusicPlayerManager musicPlayerManager;
-    private final EventDispatcher dispatcher;
 
     @Inject
-    public ShowPlaylistEventHandler(MusicPlayerManager musicPlayerManager, GatewayDiscordClient client)
+    public ShowPlaylistEventHandler(MusicPlayerManager musicPlayerManager)
     {
         this.musicPlayerManager = musicPlayerManager;
-        this.dispatcher = client.getEventDispatcher();
     }
 
     @Override

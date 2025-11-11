@@ -39,23 +39,23 @@ public class VoiceConnections
     /**
      * Join a voice channel reactively and start auto-leave monitoring.
      */
-    public Mono<VoiceConnection> join(AudioChannel voiceChannel)
+    public Mono<VoiceConnection> join(AudioChannel audioChannel)
     {
-        logger.info("Joining voice channel: {}", voiceChannel.getName());
-        var guildId = voiceChannel.getGuildId();
-        var audioMusicPlayer = musicPlayerManager.getOrCreateMusicPlayer(guildId);
+        logger.info("Joining voice channel: {}", audioChannel.getName());
+        var guildId = audioChannel.getGuildId();
+        var audioMusicPlayer = musicPlayerManager.getOrCreateMusicPlayer(audioChannel.getClient(), guildId);
         AudioProvider provider = new LavaPlayerAudioProvider(audioMusicPlayer.audioPlayer());
 
-        return voiceChannel.join(AudioChannelJoinSpec.builder()
+        return audioChannel.join(AudioChannelJoinSpec.builder()
                 .provider(provider)
                 .build())
             .flatMap(vc ->
             {
-                var acc = new AudioChannelConnection(vc, voiceChannel, audioMusicPlayer.musicPlayer());
+                var acc = new AudioChannelConnection(vc, audioChannel, audioMusicPlayer.musicPlayer());
                 activeConnections.put(guildId, acc);
                 acc.musicPlayer().pause(false);
                 // Monitor channel for auto-leave
-                return monitorAndAutoLeave(acc, voiceChannel).thenReturn(vc);
+                return monitorAndAutoLeave(acc, audioChannel).thenReturn(vc);
             });
     }
 
