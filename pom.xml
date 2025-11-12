@@ -6,7 +6,7 @@
 
     <groupId>com.github.langebangen</groupId>
     <artifactId>kensa</artifactId>
-    <version>3.0</version>
+    <version>3.1</version>
 
     <repositories>
         <repository>
