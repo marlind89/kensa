@@ -3,7 +3,7 @@ package com.github.langebangen.kensa.event.voicechannel.leave;
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 
 public class LeaveVoiceChannelEventHandler implements EventHandler<LeaveVoiceChannelEvent>
 {
@@ -16,9 +16,8 @@ public class LeaveVoiceChannelEventHandler implements EventHandler<LeaveVoiceCha
     }
 
     @Override
-    public Flux<?> handle(Flux<LeaveVoiceChannelEvent> events)
+    public Publisher<?> handle(LeaveVoiceChannelEvent event)
     {
-        return events
-            .flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId()));
+        return voiceConnections.disconnect(event.getTextChannel().getGuildId());
     }
 }

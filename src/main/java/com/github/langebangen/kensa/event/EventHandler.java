@@ -1,9 +1,10 @@
 package com.github.langebangen.kensa.event;
 
 import discord4j.core.event.domain.Event;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 
 public interface EventHandler<T extends Event>
+    extends EventHandlerBase
 {
-    Flux<?> handle(Flux<T> events);
+    Publisher<?> handle(T event);
 }

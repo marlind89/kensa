@@ -3,7 +3,8 @@ package com.github.langebangen.kensa.event.radio.track.skip;
 import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 public class SkipTrackEventHandler implements EventHandler<SkipTrackEvent>
 {
@@ -16,31 +17,27 @@ public class SkipTrackEventHandler implements EventHandler<SkipTrackEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<SkipTrackEvent> events)
+    public Publisher<?> handle(SkipTrackEvent event)
     {
-        return events
-            .doOnNext(event ->
+        String skipAmountString = event.getSkipAmount();
+        return musicPlayerManager.getMusicPlayer(event).map(player ->
+        {
+            if (skipAmountString == null)
             {
-                String skipAmountString = event.getSkipAmount();
-                musicPlayerManager.getMusicPlayer(event).ifPresent(player ->
-                {
-                    if (skipAmountString == null)
-                    {
-                        //Skip current song
-                        player.skipTrack();
-                    }
-                    else if (!isInteger(skipAmountString))
-                    {
-                        event.getTextChannel().createMessage("That's not a valid number!")
-                            .subscribe();
-                    }
-                    else
-                    {
-                        int skipAmount = Integer.parseInt(skipAmountString);
-                        player.skipTrack(skipAmount);
-                    }
-                });
-            });
+                //Skip current song
+                player.skipTrack();
+                return Mono.empty();
+            }
+
+            if (!isInteger(skipAmountString))
+            {
+                return event.getTextChannel().createMessage("That's not a valid number!");
+            }
+
+            int skipAmount = Integer.parseInt(skipAmountString);
+            player.skipTrack(skipAmount);
+            return Mono.empty();
+        }).orElse(Mono.empty());
     }
 
     private static boolean isInteger(String s)

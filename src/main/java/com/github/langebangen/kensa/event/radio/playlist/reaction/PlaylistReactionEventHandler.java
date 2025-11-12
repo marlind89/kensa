@@ -5,7 +5,7 @@ import com.github.langebangen.kensa.event.EventHandler;
 import com.github.langebangen.kensa.event.radio.playlist.show.ShowPlaylistEventHandler;
 import com.google.inject.Inject;
 import discord4j.core.event.domain.message.ReactionUserEmojiEvent;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class PlaylistReactionEventHandler implements EventHandler<ReactionUserEmojiEvent>
@@ -19,10 +19,9 @@ public class PlaylistReactionEventHandler implements EventHandler<ReactionUserEm
     }
 
     @Override
-    public Flux<?> handle(Flux<ReactionUserEmojiEvent> events)
+    public Publisher<?> handle(ReactionUserEmojiEvent event)
     {
-        return events
-            .flatMap(event -> Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId())))
+        return Mono.zip(event.getUser(), Mono.just(event.getEmoji()), Mono.just(event.getGuildId()))
             .filter(obj -> !obj.getT1().isBot())
             .doOnNext(tuple ->
             {

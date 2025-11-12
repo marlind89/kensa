@@ -11,9 +11,10 @@ import org.apache.commons.validator.routines.UrlValidator;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.time.ZoneId;
@@ -34,13 +35,17 @@ public class MessageLogHandler implements EventHandler<MessageCreateEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<MessageCreateEvent> events)
+    public Publisher<?> handle(MessageCreateEvent event)
     {
-        return events
-            .map(MessageCreateEvent::getMessage)
-            .filterWhen(event -> event.getAuthorAsMember().map(member -> !member.isBot()))
-            .filter(message -> Command.parseCommand(message.getContent()) == null)
-            .doOnNext(this::logMessage);
+        var message = event.getMessage();
+        if (Command.parseCommand(message.getContent()) != null)
+        {
+            return Mono.empty();
+        }
+
+        return message.getAuthorAsMember()
+            .filter(member -> !member.isBot())
+            .doOnNext(e -> logMessage(message));
     }
 
     /**

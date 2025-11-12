@@ -5,7 +5,7 @@ import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.channel.AudioChannel;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class JoinVoiceChannelEventHandler implements EventHandler<JoinVoiceChannelEvent>
@@ -19,38 +19,37 @@ public class JoinVoiceChannelEventHandler implements EventHandler<JoinVoiceChann
     }
 
     @Override
-    public Flux<?> handle(Flux<JoinVoiceChannelEvent> events)
+    public Publisher<?> handle(JoinVoiceChannelEvent event)
     {
-        return events
-            .flatMap(event -> event.getTextChannel().getGuild()
-                .flatMap(guild ->
+        return event.getTextChannel().getGuild()
+            .flatMap(guild ->
+            {
+                Mono<AudioChannel> vcToJoin;
+                String voiceChannelNameToJoin = event.getVoiceChannelNameToJoin();
+                if (voiceChannelNameToJoin == null || voiceChannelNameToJoin.isEmpty())
                 {
-                    Mono<AudioChannel> vcToJoin;
-                    String voiceChannelNameToJoin = event.getVoiceChannelNameToJoin();
-                    if (voiceChannelNameToJoin == null || voiceChannelNameToJoin.isEmpty())
-                    {
-                        vcToJoin = event.getMember()
-                            .getVoiceState()
-                            .flatMap(VoiceState::getChannel);
-                    }
-                    else
-                    {
-                        vcToJoin = guild.getChannels().ofType(AudioChannel.class)
-                            .filter(channel -> channel.getName().trim().equalsIgnoreCase(
-                                event.getVoiceChannelNameToJoin().trim()))
-                            .singleOrEmpty();
-                    }
+                    vcToJoin = event.getMember()
+                        .getVoiceState()
+                        .flatMap(VoiceState::getChannel);
+                }
+                else
+                {
+                    vcToJoin = guild.getChannels().ofType(AudioChannel.class)
+                        .filter(channel -> channel.getName().trim().equalsIgnoreCase(
+                            event.getVoiceChannelNameToJoin().trim()))
+                        .singleOrEmpty();
+                }
 
-                    return vcToJoin.flatMap(voiceConnections::join);
-                })
-                .doOnSuccess(vc ->
+                return vcToJoin.flatMap(voiceConnections::join);
+            })
+            .doOnSuccess(vc ->
+            {
+                if (vc == null)
                 {
-                    if (vc == null)
-                    {
-                        event.getTextChannel()
-                            .createMessage("No channel with name " + event.getVoiceChannelNameToJoin() + " exists!")
-                            .subscribe();
-                    }
-                }));
+                    event.getTextChannel()
+                        .createMessage("No channel with name " + event.getVoiceChannelNameToJoin() + " exists!")
+                        .subscribe();
+                }
+            });
     }
 }

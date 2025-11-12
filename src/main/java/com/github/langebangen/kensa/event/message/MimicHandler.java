@@ -4,7 +4,8 @@ import com.github.langebangen.kensa.command.Command;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.util.Random;
 
@@ -19,14 +20,17 @@ public class MimicHandler implements EventHandler<MessageCreateEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<MessageCreateEvent> events)
+    public Publisher<?> handle(MessageCreateEvent event)
     {
-        return events
-            .map(MessageCreateEvent::getMessage)
-            .filterWhen(event -> event.getAuthorAsMember().map(member -> !member.isBot()))
-            .filter(message -> Command.parseCommand(message.getContent()) == null)
-            .filter(message -> (random.nextFloat() * 1000) > 999)
-            .flatMap(message -> message.getChannel()
-                .flatMap(channel -> channel.createMessage("YEAH, " + message.getContent())));
+        var message = event.getMessage();
+        if (Command.parseCommand(message.getContent()) != null || (random.nextFloat() * 1000) < 999)
+        {
+            return Mono.empty();
+        }
+        
+        return message.getAuthorAsMember()
+            .filter(member -> !member.isBot())
+            .flatMap(member -> message.getChannel())
+            .flatMap(channel -> channel.createMessage("YEAH, " + message.getContent()));
     }
 }

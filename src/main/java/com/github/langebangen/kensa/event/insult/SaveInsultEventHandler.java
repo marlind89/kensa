@@ -7,9 +7,9 @@ import com.google.inject.Inject;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
@@ -29,45 +29,43 @@ public class SaveInsultEventHandler implements EventHandler<SaveInsultEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<SaveInsultEvent> events)
+    public Publisher<?> handle(SaveInsultEvent event)
     {
-        return events
-            .flatMap(event ->
-            {
-                if (!event.isAdded() && LatestInsult.getLastInsultId() == -1)
-                {
-                    return event.getTextChannel()
-                        .createMessage("No previous insult to remove!");
-                }
+        if (!event.isAdded() && LatestInsult.getLastInsultId() == -1)
+        {
+            return event.getTextChannel()
+                .createMessage("No previous insult to remove!");
+        }
 
-                try (var conn = storage.getConnection())
+        try (var conn = storage.getConnection())
+        {
+            DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
+            if (event.isAdded())
+            {
+                String insult = event.getInsult();
+                if (insult != null && !insult.isEmpty())
                 {
-                    DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
-                    if (event.isAdded())
-                    {
-                        String insult = event.getInsult();
-                        if (insult != null && !insult.isEmpty())
-                        {
-                            InsultRecord insultRecord = create.newRecord(INSULT);
-                            insultRecord.setText(event.getInsult());
-                            insultRecord.store();
-                            return event.getTextChannel().createMessage("Insult added.");
-                        }
-                    }
-                    else
-                    {
-                        create.delete(INSULT)
-                            .where(INSULT.ID.equal(LatestInsult.getLastInsultId()))
-                            .execute();
-                        LatestInsult.setLastInsultId(-1);
-                        return event.getTextChannel().createMessage("Removed previous insult.");
-                    }
+                    InsultRecord insultRecord = create.newRecord(INSULT);
+                    insultRecord.setText(event.getInsult());
+                    insultRecord.store();
+                    return event.getTextChannel().createMessage("Insult added.");
                 }
-                catch (SQLException e)
-                {
-                    logger.error("Error when persisting insult.", e);
-                }
-                return Mono.empty();
-            });
+            }
+            else
+            {
+                create.delete(INSULT)
+                    .where(INSULT.ID.equal(LatestInsult.getLastInsultId()))
+                    .execute();
+                LatestInsult.setLastInsultId(-1);
+                return event.getTextChannel().createMessage("Removed previous insult.");
+            }
+        }
+        catch (SQLException e)
+        {
+            logger.error("Error when persisting insult.", e);
+            return Mono.error(e);
+        }
+        
+        return Mono.empty();
     }
 }

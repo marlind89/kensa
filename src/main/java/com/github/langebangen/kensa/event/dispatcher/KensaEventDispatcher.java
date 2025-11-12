@@ -25,7 +25,7 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.TextChannel;
 import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -33,23 +33,18 @@ import java.util.Arrays;
 public class KensaEventDispatcher implements EventHandler<MessageCreateEvent>
 {
     @Override
-    public Flux<?> handle(Flux<MessageCreateEvent> events)
+    public Publisher<?> handle(MessageCreateEvent event)
     {
-        return events
-            .map(MessageCreateEvent::getMessage)
-            .flatMap(message ->
-            {
-                Command command = Command.parseCommand(message.getContent());
+        var message = event.getMessage();
+        var messageCommand = Command.parseCommand(message.getContent());
 
-                return Mono.zip(Mono.justOrEmpty(command),
-                    message.getAuthorAsMember().flatMap(member -> command.getAction().hasPermission(member)),
-                    message.getGuild(),
-                    message.getChannel().ofType(TextChannel.class),
-                    message.getAuthorAsMember());
-            })
+        return Mono.zip(Mono.justOrEmpty(messageCommand),
+                message.getAuthorAsMember().flatMap(member -> messageCommand.getAction().hasPermission(member)),
+                message.getGuild(),
+                message.getChannel().ofType(TextChannel.class),
+                message.getAuthorAsMember())
             .flatMap(zip ->
             {
-
                 Command command = zip.getT1();
                 boolean hasPermission = zip.getT2();
                 Guild guild = zip.getT3();

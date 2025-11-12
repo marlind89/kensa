@@ -3,7 +3,7 @@ package com.github.langebangen.kensa.module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.langebangen.kensa.audio.lavaplayer.LavaplayerModule;
 import com.github.langebangen.kensa.config.*;
-import com.github.langebangen.kensa.event.EventHandler;
+import com.github.langebangen.kensa.event.EventHandlerBase;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -64,12 +64,12 @@ public class KensaModule
             .bind("suno", SunoConfig.class));
 
         var multibinder =
-            Multibinder.newSetBinder(binder(), new TypeLiteral<EventHandler>()
+            Multibinder.newSetBinder(binder(), new TypeLiteral<EventHandlerBase>()
             {
             });
 
         var reflections = new Reflections("com.github.langebangen.kensa.event");
-        for (var impl : reflections.getSubTypesOf(EventHandler.class))
+        for (var impl : reflections.getSubTypesOf(EventHandlerBase.class))
         {
             // Skip abstract classes
             if ((impl.getModifiers() & java.lang.reflect.Modifier.ABSTRACT) != 0)

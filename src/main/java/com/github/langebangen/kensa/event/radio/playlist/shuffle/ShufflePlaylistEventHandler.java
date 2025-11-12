@@ -4,7 +4,7 @@ import com.github.langebangen.kensa.audio.lavaplayer.MusicPlayerManager;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
 import discord4j.core.object.entity.Message;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public class ShufflePlaylistEventHandler implements EventHandler<ShufflePlaylistEvent>
@@ -18,15 +18,14 @@ public class ShufflePlaylistEventHandler implements EventHandler<ShufflePlaylist
     }
 
     @Override
-    public Flux<?> handle(Flux<ShufflePlaylistEvent> events)
+    public Publisher<?> handle(ShufflePlaylistEvent event)
     {
-        return events
-            .flatMap(event -> musicPlayerManager.getMusicPlayer(event)
-                .map(player ->
-                {
-                    player.shuffle();
-                    return (Mono<Message>) event.getTextChannel().createMessage("Playlist shuffled!");
-                })
-                .orElse(Mono.empty()));
+        return musicPlayerManager.getMusicPlayer(event)
+            .map(player ->
+            {
+                player.shuffle();
+                return (Mono<Message>) event.getTextChannel().createMessage("Playlist shuffled!");
+            })
+            .orElse(Mono.empty());
     }
 }

@@ -3,9 +3,9 @@ package com.github.langebangen.kensa.event.restart;
 import com.github.langebangen.kensa.audio.VoiceConnections;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,18 +24,16 @@ public class RestartKensaEventHandler implements EventHandler<RestartKensaEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<RestartKensaEvent> events)
+    public Publisher<?> handle(RestartKensaEvent event)
     {
-        return events
-            .flatMap(event -> voiceConnections.disconnect(event.getTextChannel().getGuildId())
-                .defaultIfEmpty(null)
-                .flatMap(vcc ->
-                {
-                    String voiceChannelId = vcc == null ? "" : " " + vcc.audioChannel().getId().asLong();
-                    return event.getTextChannel().createMessage("Restarting...")
-                        .then(event.getClient().logout())
-                        .thenReturn(voiceChannelId);
-                }))
+        return voiceConnections.disconnect(event.getTextChannel().getGuildId())
+            .flatMap(vcc ->
+            {
+                String voiceChannelId = vcc == null ? "" : " " + vcc.audioChannel().getId().asLong();
+                return event.getTextChannel().createMessage("Restarting...")
+                    .then(event.getClient().logout())
+                    .thenReturn(voiceChannelId);
+            })
             .doOnNext(voiceChannelId ->
             {
                 List<String> command = new ArrayList<>();

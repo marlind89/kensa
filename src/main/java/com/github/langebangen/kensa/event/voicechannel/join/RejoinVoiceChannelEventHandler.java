@@ -7,9 +7,10 @@ import com.google.inject.name.Named;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.entity.channel.VoiceChannel;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public class RejoinVoiceChannelEventHandler implements EventHandler<ReadyEvent>
 {
@@ -28,12 +29,15 @@ public class RejoinVoiceChannelEventHandler implements EventHandler<ReadyEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<ReadyEvent> events)
+    public Publisher<?> handle(ReadyEvent event)
     {
-        return events
-            .doOnNext(e -> logger.info("Logged in successfully!"))
-            .filter(msg -> latestVoiceChannelId > 0)
-            .flatMap(msg -> msg.getClient().getChannelById(Snowflake.of(latestVoiceChannelId)))
+        logger.info("Logged in successfully!");
+        if (latestVoiceChannelId <= 0)
+        {
+            return Mono.empty();
+        }
+
+        return event.getClient().getChannelById(Snowflake.of(latestVoiceChannelId))
             .ofType(VoiceChannel.class)
             .flatMap(voiceChannel ->
             {

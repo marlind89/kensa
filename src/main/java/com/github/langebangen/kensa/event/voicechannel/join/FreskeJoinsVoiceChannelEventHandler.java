@@ -1,6 +1,6 @@
 package com.github.langebangen.kensa.event.voicechannel.join;
 
-import com.github.langebangen.kensa.event.EventHandler;
+import com.github.langebangen.kensa.event.EventStreamHandler;
 import com.github.langebangen.kensa.event.radio.track.play.PlayTrackEvent;
 import com.google.inject.Inject;
 import discord4j.common.util.Snowflake;
@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Random;
 
-public class FreskeJoinsVoiceChannelEventHandler implements EventHandler<VoiceStateUpdateEvent>
+public class FreskeJoinsVoiceChannelEventHandler implements EventStreamHandler<VoiceStateUpdateEvent>
 {
     private final Random random;
 

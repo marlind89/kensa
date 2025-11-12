@@ -3,7 +3,7 @@ package com.github.langebangen.kensa.event.babylon;
 import com.github.langebangen.kensa.babylon.Babylon;
 import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 
 public class BabylonEventHandler implements EventHandler<BabylonEvent>
 {
@@ -16,10 +16,8 @@ public class BabylonEventHandler implements EventHandler<BabylonEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<BabylonEvent> events)
+    public Publisher<?> handle(BabylonEvent event)
     {
-        return events
-            .flatMap(event -> event.getTextChannel()
-                .createMessage("```" + babylon.getRandomDish() + "```"));
+        return event.getTextChannel().createMessage("```" + babylon.getRandomDish() + "```");
     }
 }

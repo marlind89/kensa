@@ -6,9 +6,9 @@ import com.google.inject.Inject;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
@@ -27,36 +27,34 @@ public class InsultEventHandler implements EventHandler<InsultEvent>
     }
 
     @Override
-    public Flux<?> handle(Flux<InsultEvent> events)
+    public Publisher<?> handle(InsultEvent event)
     {
-        return events
-            .flatMap(event ->
+        try (Connection conn = storage.getConnection())
+        {
+            DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
+            try (var stream = create.select()
+                .from(INSULT)
+                .orderBy(DSL.rand())
+                .stream())
             {
-                try (Connection conn = storage.getConnection())
+                var first = stream.findFirst();
+                if (first.isPresent())
                 {
-                    DSLContext create = DSL.using(conn, SQLDialect.POSTGRES);
-                    try (var stream = create.select()
-                        .from(INSULT)
-                        .orderBy(DSL.rand())
-                        .stream())
-                    {
-                        var first = stream.findFirst();
-                        if (first.isPresent())
-                        {
-                            var record = first.get();
-                            String text = record.getValue(INSULT.TEXT);
-                            LatestInsult.setLastInsultId(record.getValue(INSULT.ID));
+                    var record = first.get();
+                    String text = record.getValue(INSULT.TEXT);
+                    LatestInsult.setLastInsultId(record.getValue(INSULT.ID));
 
-                            return event.getTextChannel().createMessage(
-                                event.getUser().getMention() + ", " + text);
-                        }
-                    }
+                    return event.getTextChannel().createMessage(
+                        event.getUser().getMention() + ", " + text);
                 }
-                catch (Exception e)
-                {
-                    logger.error("Error when fetching insult from storage.", e);
-                }
-                return Mono.empty();
-            });
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Error when fetching insult from storage.", e);
+            return Mono.error(e);
+        }
+        
+        return Mono.empty();
     }
 }

@@ -5,7 +5,7 @@ import com.github.langebangen.kensa.event.EventHandler;
 import com.google.inject.Inject;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Member;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 
 public class ReconnectVoiceChannelEventHandler implements EventHandler<ReconnectVoiceChannelEvent>
 {
@@ -18,11 +18,10 @@ public class ReconnectVoiceChannelEventHandler implements EventHandler<Reconnect
     }
 
     @Override
-    public Flux<?> handle(Flux<ReconnectVoiceChannelEvent> events)
+    public Publisher<?> handle(ReconnectVoiceChannelEvent event)
     {
-        return events
-            .flatMap(event -> event.getClient().getSelf()
-                .flatMap(self -> self.asMember(event.getTextChannel().getGuildId())))
+        return event.getClient().getSelf()
+            .flatMap(self -> self.asMember(event.getTextChannel().getGuildId()))
             .flatMap(Member::getVoiceState)
             .flatMap(VoiceState::getChannel)
             .flatMap(ac -> voiceConnections.reconnect(ac, true));
