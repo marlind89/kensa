@@ -40,16 +40,15 @@ public class EventHandlerRegistrar
             .map(handler ->
             {
                 Class<? extends Event> eventType = resolveEventType(handler.getClass());
-                Flux<? extends Event> flux = switch (handler)
+                Flux<?> flux = switch (handler)
                 {
                     case EventHandler eventHandler -> dispatcher.on(eventType, e -> eventHandler.handle(e));
-                    case EventStreamHandler streamHandler ->
-                        ((Flux<? extends Event>) streamHandler.handle(dispatcher.on(eventType)))
-                            .onErrorResume(t ->
-                            {
-                                logger.error("Error while handling {}", eventType.getSimpleName(), t);
-                                return Mono.empty();
-                            });
+                    case EventStreamHandler streamHandler -> ((Flux<?>) streamHandler.handle(dispatcher.on(eventType)))
+                        .onErrorResume(t ->
+                        {
+                            logger.error("Error while handling {}", eventType.getSimpleName(), t);
+                            return Mono.empty();
+                        });
                     default -> throw new IllegalStateException("Unknown handler type: " + handler.getClass().getName());
                 };
 
