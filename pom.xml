@@ -23,6 +23,10 @@
             <url>https://maven.lavalink.dev/releases</url>
         </repository>
         <repository>
+            <id>lavalink-snapshots</id>
+            <url>https://maven.lavalink.dev/snapshots</url>
+        </repository>
+        <repository>
             <id>dv8tion</id>
             <name>m2-dv8tion</name>
             <url>https://m2.dv8tion.net/releases</url>
@@ -109,13 +113,13 @@
         <dependency>
             <groupId>com.github.devoxin</groupId>
             <artifactId>lavaplayer</artifactId>
-            <version>[1.9.1,)</version>
+            <version>[1.11.0,)</version>
         </dependency>
 
         <dependency>
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>youtube-plugin</artifactId>
-            <version>[1.16.0,)</version>
+            <version>f45bbb7aebfcbc1c553769e04af6cd43afa8b7c3</version>
         </dependency>
 
         <dependency>

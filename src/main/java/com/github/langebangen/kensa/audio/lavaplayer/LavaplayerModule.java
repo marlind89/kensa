@@ -17,6 +17,9 @@ import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeSearchProvider;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.YoutubeSourceOptions;
+import dev.lavalink.youtube.clients.*;
+import dev.lavalink.youtube.clients.skeleton.Client;
 
 public class LavaplayerModule
     extends AbstractModule
@@ -28,12 +31,23 @@ public class LavaplayerModule
         bind(YoutubeSearchProvider.class).toInstance(new YoutubeSearchProvider());
     }
 
+    private static final Client[] DEFAULT_CLIENTS =
+        new Client[]{new Music(), new AndroidVr(), new MWeb(), new WebEmbedded(), new Web(), new Android(),
+            new AndroidMusic(), new Ios(), new Tv(), new TvHtml5Simply()};
+    
+
     @Provides
     @Singleton
     public YoutubeAudioSourceManager provideYoutubeAudioSourceManager(YoutubeConfig config)
     {
-        var ytSourceManager = new YoutubeAudioSourceManager(true);
+        var opts = new YoutubeSourceOptions()
+            .setRemoteCipher("https://cipher.kikkia.dev/", null, null)
+            .setAllowSearch(true)
+            .setAllowDirectVideoIds(true)
+            .setAllowDirectPlaylistIds(true);
+        var ytSourceManager = new YoutubeAudioSourceManager(opts, DEFAULT_CLIENTS);
         ytSourceManager.useOauth2(config.token(), false);
+
         return ytSourceManager;
     }
 
